@@ -1,0 +1,41 @@
+{
+  "name": "ressac",
+  "private": true,
+  "version": "1.0.0",
+  "description": "RESSAC — jeu mobile de pêche, d'exploration et de collection (solo, hors ligne).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test --trace off",
+    "lint": "eslint . && prettier --check \"src/**/*.{ts,css,json}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\"",
+    "format": "prettier --write \"src/**/*.{ts,css,json}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,mjs}\"",
+    "simulate": "tsx scripts/simulate.ts",
+    "icons": "node scripts/generate-icons.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "cap:sync": "npm run build && cap sync"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "1.63.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^7.3.8",
+    "vitest": "^3.2.7"
+  }
+}
