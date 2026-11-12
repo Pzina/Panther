@@ -29,6 +29,9 @@ describe('story', () => {
 
     land(game, 'mulet', 0.4);
     land(game, 'vieille', 0.5);
+    land(game, 'bar', 0.6);
+    expect(completed).not.toContain('s04');
+    land(game, 'sole', 0.6);
     expect(completed).toContain('s04');
     expect(unlocked).toEqual(['etang']);
     expect(game.zoneAccess('etang').ok).toBe(true);

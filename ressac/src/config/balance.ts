@@ -13,7 +13,7 @@ export const BALANCE = {
     /** Weather changes every N in-game hours. */
     weatherSlotHours: 3,
     /** Chance for a night slot to become a "marée luisante". */
-    glowChance: 0.07,
+    glowChance: 0.055,
   },
   phases: {
     dawn: [5, 8],
@@ -26,8 +26,8 @@ export const BALANCE = {
     uncommon: { weight: 34, value: 2.4, xp: 18, difficulty: 0.28, window: 0.85, luckScale: 0.35 },
     rare: { weight: 11, value: 6, xp: 45, difficulty: 0.46, window: 0.7, luckScale: 0.8 },
     epic: { weight: 3.4, value: 15, xp: 110, difficulty: 0.64, window: 0.58, luckScale: 1.1 },
-    legendary: { weight: 1.0, value: 40, xp: 280, difficulty: 0.82, window: 0.48, luckScale: 1.3 },
-    mythic: { weight: 0.3, value: 110, xp: 750, difficulty: 1.0, window: 0.4, luckScale: 1.5 },
+    legendary: { weight: 0.65, value: 40, xp: 280, difficulty: 0.82, window: 0.48, luckScale: 1.3 },
+    mythic: { weight: 0.17, value: 110, xp: 750, difficulty: 1.0, window: 0.4, luckScale: 1.5 },
   } as Record<
     Rarity,
     { weight: number; value: number; xp: number; difficulty: number; window: number; luckScale: number }
@@ -66,8 +66,8 @@ export const BALANCE = {
     perfectLuck: 0.25,
   },
   bite: {
-    minSeconds: 3.5,
-    maxSeconds: 8.5,
+    minSeconds: 4,
+    maxSeconds: 10,
     weather: { sun: 1.08, clouds: 1, rain: 0.86, storm: 0.76, fog: 0.95, glow: 0.8 } as Record<Weather, number>,
     phase: { dawn: 0.85, day: 1, dusk: 0.85, night: 0.95 } as Record<DayPhase, number>,
     perfectMult: 0.75,
@@ -86,7 +86,9 @@ export const BALANCE = {
     minSeconds: 3,
     maxSeconds: 30,
     /** Share of the fight a good player spends reeling inside the safe zone. */
-    efficiency: 0.6,
+    efficiency: 0.4,
+    /** How much faster the fish comes in once the expected duration is over (per extra duration). */
+    fatigue: 1.5,
     outsideReelFactor: 0.25,
     recoverRate: 0.025,
     strainRate: 0.55,
@@ -140,7 +142,7 @@ export const BALANCE = {
   sellBonusPerLevel: 0.01,
   aquariumSlots: 6,
   /** Seconds a simulated or real catch takes besides waiting and fighting (cast, card, etc.). */
-  overheadSeconds: 7,
+  overheadSeconds: 10,
 };
 
 export type Balance = typeof BALANCE;

@@ -84,13 +84,15 @@ export class FightModel {
   private nextEvent: number;
   private phase: number;
   private reelRate: number;
+  private expected: number;
 
   constructor(
     readonly params: FightParams,
     private rng: Rng,
   ) {
     const f = BALANCE.fight;
-    this.reelRate = 1 / (fightDuration(params.difficulty) * f.efficiency);
+    this.expected = fightDuration(params.difficulty);
+    this.reelRate = 1 / (this.expected * f.efficiency);
     this.nextEvent = rng.range(1.2, 2.4);
     this.phase = rng.range(0, Math.PI * 2);
   }
@@ -135,8 +137,9 @@ export class FightModel {
       case 'diver': {
         if (this.surge > 0) {
           this.surge -= dt;
-          this.tension += (0.28 + 0.3 * d) * dt;
-          this.distance = Math.min(1, this.distance + 0.035 * dt);
+          // The fish pulls: the line tightens and it gains ground, unless the player gives line.
+          this.tension += (0.16 + 0.18 * d) * dt;
+          this.distance = Math.min(1, this.distance + 0.03 * dt);
           this.targetCenter = Math.max(lo, 0.36 - 0.08 * d);
         } else {
           this.targetCenter = 0.5 + Math.sin(this.time * 0.6 + this.phase) * 0.1;
@@ -209,7 +212,9 @@ export class FightModel {
     // Progress.
     const inSafe = this.inSafeZone;
     if (reeling) {
-      this.distance -= this.reelRate * p.reelSpeed * (inSafe ? 1 : f.outsideReelFactor) * dt;
+      // A long fight tires the fish: progress speeds up once the expected duration is over.
+      const fatigue = 1 + Math.max(0, this.time - this.expected) / this.expected * f.fatigue;
+      this.distance -= this.reelRate * p.reelSpeed * fatigue * (inSafe ? 1 : f.outsideReelFactor) * dt;
     } else {
       this.distance = Math.min(1, this.distance + f.recoverRate * dt);
     }
