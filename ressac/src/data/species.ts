@@ -274,7 +274,7 @@ export const SPECIES: Species[] = [
   sp('regalec', 'Régalec', 'legendary', 'fosse', [0.65, 1], 'diver', [300, 800], [40, 250],
     art('eel', 6, 'point', 'sail', 'bands', '#c9d0d9', '#f04a4a', '#e83a3a', 1.0, 'crest'),
     'Le roi des harengs : un ruban d’argent long comme le quai, crête rouge au vent.', { baits: ['calmar', 'lumignon'] }),
-  sp('veilleuse', 'La Veilleuse', 'mythic', 'fosse', [0.7, 1], 'cunning', [350, 600], [300, 900],
+  sp('veilleuse', 'La Veilleuse', 'mythic', 'fosse', [0.55, 1], 'cunning', [350, 600], [300, 900],
     art('angler', 2.0, 'fan', 'sail', 'glow', '#2b3a6a', '#8af0f0', '#f0e88a', 1.3, 'lure'),
     "« Elle existe. Elle éclaire le fond pour que les autres trouvent leur chemin. » — dernière page de Maëlle", { baits: ['leurre'] }),
 

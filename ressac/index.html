@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f2a3d" />
+    <meta name="description" content="RESSAC — pêchez, explorez et complétez le carnet de l'archipel. Jeu solo, hors ligne, sans publicité." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RESSAC" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+    <title>RESSAC</title>
+    <style>
+      /* Critical splash styles: shown before the bundle is parsed. */
+      html, body { margin: 0; height: 100%; background: #0f2a3d; }
+      #splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: radial-gradient(circle at 50% 35%, #1f6f8f 0%, #0f2a3d 70%); color: #fbf5e6; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        transition: opacity 0.6s ease; padding: 24px; box-sizing: border-box; text-align: center; }
+      #splash.is-done { opacity: 0; pointer-events: none; }
+      .splash-logo { position: relative; width: min(300px, 80vw); height: 120px; }
+      .splash-logo svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+      .splash-letters { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 54px; letter-spacing: 4px; }
+      .splash-letters span { display: inline-block; opacity: 0; transform: translateY(26px); animation: rise 0.7s cubic-bezier(.2,1.4,.4,1) forwards; text-shadow: 0 3px 0 #1d3344; }
+      .splash-letters span:nth-child(1) { animation-delay: 0.15s } .splash-letters span:nth-child(2) { animation-delay: 0.27s }
+      .splash-letters span:nth-child(3) { animation-delay: 0.39s } .splash-letters span:nth-child(4) { animation-delay: 0.51s }
+      .splash-letters span:nth-child(5) { animation-delay: 0.63s } .splash-letters span:nth-child(6) { animation-delay: 0.75s }
+      .splash-wave { animation: sweep 1.6s ease-in-out forwards; }
+      @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+      @keyframes sweep { from { transform: translateX(-110%); } to { transform: translateX(0); } }
+      @keyframes swell { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+      .splash-crest { animation: swell 2.4s ease-in-out 1.6s infinite; }
+      .splash-track { width: min(260px, 70vw); height: 10px; border-radius: 6px; background: rgba(251,245,230,0.18); overflow: hidden; }
+      #splash-bar { width: 0; height: 100%; background: #e8a82e; border-radius: 6px; transition: width 0.2s ease; }
+      #splash-tip { max-width: 300px; font-size: 15px; line-height: 1.45; opacity: 0.9; min-height: 3em; }
+      .splash-label { font-size: 13px; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; }
+      @media (prefers-reduced-motion: reduce) { .splash-letters span, .splash-wave, .splash-crest { animation-duration: 0.01s; animation-delay: 0s; } }
+    </style>
+  </head>
+  <body>
+    <div id="splash" role="status" aria-live="polite">
+      <div class="splash-logo" aria-label="RESSAC">
+        <svg viewBox="0 0 300 120" aria-hidden="true">
+          <g class="splash-wave">
+            <path class="splash-crest" d="M-20 92 q25 -26 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V130 H-20z" fill="#3fb0c6" />
+            <path d="M-20 104 q25 -18 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V130 H-20z" fill="#fbf5e6" opacity="0.9" />
+          </g>
+        </svg>
+        <div class="splash-letters"><span>R</span><span>E</span><span>S</span><span>S</span><span>A</span><span>C</span></div>
+      </div>
+      <div class="splash-label">Chargement</div>
+      <div class="splash-track"><div id="splash-bar"></div></div>
+      <p id="splash-tip"></p>
+      <noscript>RESSAC a besoin de JavaScript pour fonctionner.</noscript>
+    </div>
+    <div id="app">
+      <div id="game"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,107 @@
+import { expect, test } from '@playwright/test';
+import { boot, catchOne, dismissDialogs, hudState } from './helpers';
+
+test('new game: intro, tutorial and first fish in under two minutes', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  const start = Date.now();
+  await boot(page);
+  await page.click('#tap-start');
+  await page.click('#btn-play');
+
+  // Introduction comic (4 panels).
+  for (let i = 0; i < 4; i++) await page.click('#intro-next');
+
+  // Tutorial: guided by Capitaine Hervé.
+  await expect(page.locator('#tutorial')).toContainText('Maintiens le doigt');
+  await expect.poll(() => hudState(page)).toBe('idle');
+  await catchOne(page);
+  await expect(page.locator('#catch-card')).toContainText('Gobie des galets');
+  await page.click('#catch-later');
+  await expect.poll(() => page.evaluate(() => (window as any).ressac.game.state.creel.length)).toBe(1);
+  expect(Date.now() - start).toBeLessThan(120_000);
+
+  // Back to the port, sell to Jo, buy a bait: the tutorial ends.
+  await page.click('#btn-port');
+  await page.waitForSelector('#port-hud');
+  await expect(page.locator('#tutorial')).toContainText('Jo');
+  await page.click('#spot-shop');
+  await page.click('#sell-all');
+  await expect(page.locator('#tutorial')).toContainText('Appâts');
+  await page.click('.tab[data-tab="bait"]');
+  await page.click('[data-item="ver"] .btn-price');
+  await expect.poll(() => page.evaluate(() => (window as any).ressac.game.state.flags.tutorialDone)).toBe(true);
+  await expect.poll(() => page.evaluate(() => (window as any).ressac.game.state.baits.ver)).toBe(10);
+
+  // The save survives a reload.
+  await page.evaluate(() => (window as any).ressac.save());
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]');
+  await page.click('#tap-start');
+  await expect(page.locator('#home-save')).toContainText('Jour 1');
+  expect(await page.evaluate(() => (window as any).ressac.game.state.stats.catches)).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('a corrupted save never crashes the game and the backup is offered', async ({ page }) => {
+  await boot(page);
+  await page.click('#tap-start');
+  await page.evaluate(() => {
+    const r = (window as any).ressac;
+    r.game.state.flags.introSeen = true;
+    r.game.state.coins = 4321;
+    r.save();
+  });
+  // Reload once so that the good save becomes the backup, then break the main save.
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]');
+  await page.evaluate(() => {
+    // Stop the game from saving again before the reload, then break the main save on purpose.
+    (window as any).ressac.save = () => undefined;
+    localStorage.setItem('ressac.save', '{"v":2,"data":{oops');
+  });
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]');
+  await page.click('#corrupt-restore');
+  expect(await page.evaluate(() => (window as any).ressac.game.state.coins)).toBe(4321);
+});
+
+test('the story can be completed with the debug mode', async ({ page }) => {
+  test.setTimeout(300_000);
+  await boot(page, '/?debug=1');
+  await page.click('#tap-start');
+  await page.evaluate(() => {
+    const r = (window as any).ressac;
+    Object.assign(r.game.state.flags, { introSeen: true, tutorialDone: true, tutorialStep: 7 });
+    r.save();
+  });
+  await page.click('#btn-play');
+  await page.waitForSelector('#port-hud');
+  await dismissDialogs(page);
+  await page.click('#btn-debug');
+  await page.click('#dbg-story');
+  await dismissDialogs(page);
+  await page.click('.screen-back');
+  await dismissDialogs(page);
+  // Travel to the Fosse with Maëlle's lure and catch the legend.
+  await page.evaluate(() => (window as any).ressac.ui.open('map'));
+  await page.click('.map-node[data-zone="fosse"]');
+  await page.click('#go-fosse');
+  await page.waitForSelector('#fishing-hud');
+  await page.evaluate(() => (window as any).ressac.game.equip('leurre'));
+  await page.evaluate(() => (window as any).ressac.game.state.settings.assist = true);
+  await catchOne(page);
+  await expect(page.locator('#catch-card')).toContainText('La Veilleuse');
+  await page.click('#catch-later');
+  for (let i = 0; i < 20 && !(await page.locator('#ending-continue').count()); i++) {
+    const next = page.locator('#notice-ok, #dialogue-next');
+    if (await next.count()) await next.first().click();
+    await page.waitForTimeout(300);
+  }
+  await page.waitForSelector('#ending-continue', { timeout: 10_000 });
+  expect(await page.evaluate(() => (window as any).ressac.game.state.story.finished)).toBe(true);
+  await page.click('#ending-continue');
+});

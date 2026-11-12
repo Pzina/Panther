@@ -677,6 +677,15 @@ export class Game {
       if (!state.owned.includes(boat.id)) state.owned.push(boat.id);
     }
     state.equipment.boat = boatOfTier(4).id;
+    for (const [slot, id] of [
+      ['rod', 'rod-abysses'],
+      ['reel', 'reel-corvec'],
+      ['line', 'line-abysse'],
+      ['hook', 'hook-argent'],
+    ] as const) {
+      if (!state.owned.includes(id)) state.owned.push(id);
+      state.equipment[slot] = id;
+    }
     state.level = Math.max(state.level, 25);
     state.reputation = Math.max(state.reputation, 200);
     state.baits.leurre = Math.max(state.baits.leurre ?? 0, 5);
