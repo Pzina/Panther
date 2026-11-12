@@ -11,21 +11,36 @@ import { screenShell } from '../ui';
 function toggle(label: string, iconName: string, key: keyof Settings, hint?: string): HTMLElement {
   const settings = app.game.state.settings;
   const on = Boolean(settings[key]);
-  const input = h('button', {
-    class: `switch${on ? ' is-on' : ''}`,
-    type: 'button',
-    role: 'switch',
-    'aria-checked': String(on),
-    'aria-label': label,
-    'data-setting': key,
-    onclick: () => {
-      (settings as unknown as Record<string, boolean>)[key] = !settings[key];
-      app.applySettings();
-      app.save();
-      app.ui.refresh();
+  const input = h(
+    'button',
+    {
+      class: `switch${on ? ' is-on' : ''}`,
+      type: 'button',
+      role: 'switch',
+      'aria-checked': String(on),
+      'aria-label': label,
+      'data-setting': key,
+      onclick: () => {
+        (settings as unknown as Record<string, boolean>)[key] = !settings[key];
+        app.applySettings();
+        app.save();
+        app.ui.refresh();
+      },
     },
-  }, h('span', { class: 'switch-knob' }));
-  return h('div', { class: 'setting' }, icon(iconName), h('div', { class: 'setting-main' }, h('b', null, label), hint ? h('span', { class: 'row-sub' }, hint) : null), input);
+    h('span', { class: 'switch-knob' }),
+  );
+  return h(
+    'div',
+    { class: 'setting' },
+    icon(iconName),
+    h(
+      'div',
+      { class: 'setting-main' },
+      h('b', null, label),
+      hint ? h('span', { class: 'row-sub' }, hint) : null,
+    ),
+    input,
+  );
 }
 
 function slider(label: string, iconName: string, key: 'music' | 'sfx' | 'ambience'): HTMLElement {
@@ -49,12 +64,22 @@ function slider(label: string, iconName: string, key: 'music' | 'sfx' | 'ambienc
     app.save();
     if (key === 'sfx') app.audio.sfx('click');
   });
-  return h('div', { class: 'setting setting-slider' }, icon(iconName), h('div', { class: 'setting-main' }, h('b', null, label), input), value);
+  return h(
+    'div',
+    { class: 'setting setting-slider' },
+    icon(iconName),
+    h('div', { class: 'setting-main' }, h('b', null, label), input),
+    value,
+  );
 }
 
 function exportDialog(): void {
   const code = exportCode(app.game.state);
-  const area = h('textarea', { class: 'code-area', readonly: true, rows: 6, id: 'export-code' }, code) as HTMLTextAreaElement;
+  const area = h(
+    'textarea',
+    { class: 'code-area', readonly: true, rows: 6, id: 'export-code' },
+    code,
+  ) as HTMLTextAreaElement;
   const copy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(code);
@@ -71,14 +96,24 @@ function exportDialog(): void {
       h('h2', null, t('settings.export.title')),
       h('p', null, t('settings.export.text')),
       area,
-      h('div', { class: 'dialog-actions' }, button(t('common.close'), () => close(), { kind: 'ghost' }), button(t('settings.copy'), () => void copy(), { kind: 'primary', icon: 'download' })),
+      h(
+        'div',
+        { class: 'dialog-actions' },
+        button(t('common.close'), () => close(), { kind: 'ghost' }),
+        button(t('settings.copy'), () => void copy(), { kind: 'primary', icon: 'download' }),
+      ),
     ),
   );
   area.addEventListener('focus', () => area.select());
 }
 
 function importDialog(): void {
-  const area = h('textarea', { class: 'code-area', rows: 6, id: 'import-code', placeholder: 'RSC1.…' }) as HTMLTextAreaElement;
+  const area = h('textarea', {
+    class: 'code-area',
+    rows: 6,
+    id: 'import-code',
+    placeholder: 'RSC1.…',
+  }) as HTMLTextAreaElement;
   const error = h('p', { class: 'error', role: 'alert' });
   const submit = async (): Promise<void> => {
     const result = importCode(area.value);
@@ -88,7 +123,12 @@ function importDialog(): void {
       return;
     }
     const day = Math.floor(result.state.clockMinutes / 1440) + 1;
-    const ok = await app.ui.confirm(t('settings.import.title'), t('settings.import.confirm', { day, coins: formatNumber(result.state.coins) }), t('settings.import.ok'), true);
+    const ok = await app.ui.confirm(
+      t('settings.import.title'),
+      t('settings.import.confirm', { day, coins: formatNumber(result.state.coins) }),
+      t('settings.import.ok'),
+      true,
+    );
     if (!ok) return;
     close();
     app.loadState(result.state);
@@ -103,15 +143,24 @@ function importDialog(): void {
       h('p', null, t('settings.import.text')),
       area,
       error,
-      h('div', { class: 'dialog-actions' }, button(t('common.cancel'), () => close(), { kind: 'ghost' }), button(t('settings.import.ok'), () => void submit(), { kind: 'primary', icon: 'upload' })),
+      h(
+        'div',
+        { class: 'dialog-actions' },
+        button(t('common.cancel'), () => close(), { kind: 'ghost' }),
+        button(t('settings.import.ok'), () => void submit(), { kind: 'primary', icon: 'upload' }),
+      ),
     ),
   );
 }
 
 async function resetGame(): Promise<void> {
   const ui = app.ui;
-  if (!(await ui.confirm(t('settings.reset.title'), t('settings.reset.text'), t('settings.reset.ok'), true))) return;
-  if (!(await ui.confirm(t('settings.reset.title2'), t('settings.reset.text2'), t('settings.reset.ok2'), true))) return;
+  if (!(await ui.confirm(t('settings.reset.title'), t('settings.reset.text'), t('settings.reset.ok'), true)))
+    return;
+  if (
+    !(await ui.confirm(t('settings.reset.title2'), t('settings.reset.text2'), t('settings.reset.ok2'), true))
+  )
+    return;
   const settings = { ...app.game.state.settings };
   app.saves.clear();
   const fresh = createNewState(randomSeed());
@@ -150,7 +199,7 @@ export function settingsScreen(): Screen {
         toggle(t('settings.leftHanded'), 'hand', 'leftHanded', t('settings.leftHanded.hint')),
         h(
           'div',
-          { class: 'setting' },
+          { class: 'setting setting-wrap' },
           icon('text'),
           h('div', { class: 'setting-main' }, h('b', null, t('settings.textSize'))),
           h(
@@ -183,24 +232,36 @@ export function settingsScreen(): Screen {
           { class: 'setting' },
           icon('globe'),
           h('div', { class: 'setting-main' }, h('b', null, t('settings.lang'))),
-          h('select', { class: 'select', 'aria-label': t('settings.lang'), disabled: true }, h('option', { value: 'fr', selected: true }, t('settings.lang.fr'))),
+          h(
+            'select',
+            { class: 'select', 'aria-label': t('settings.lang'), disabled: true },
+            h('option', { value: 'fr', selected: true }, t('settings.lang.fr')),
+          ),
         ),
       ),
       h('h3', { class: 'section-title' }, t('settings.game')),
       h(
         'div',
         { class: 'settings-actions' },
-        button(t('settings.tutorial'), () => {
-          const flags = app.game.state.flags;
-          flags.tutorialDone = false;
-          flags.tutorialStep = 0;
-          app.save();
-          app.ui.toast(t('settings.tutorial.done'), 'info', 'anchor');
-        }, { icon: 'anchor', id: 'btn-tutorial' }),
+        button(
+          t('settings.tutorial'),
+          () => {
+            const flags = app.game.state.flags;
+            flags.tutorialDone = false;
+            flags.tutorialStep = 0;
+            app.save();
+            app.ui.toast(t('settings.tutorial.done'), 'info', 'anchor');
+          },
+          { icon: 'anchor', id: 'btn-tutorial' },
+        ),
         button(t('settings.intro'), () => app.ui.open('intro', { replay: true }), { icon: 'play' }),
         button(t('settings.export'), exportDialog, { icon: 'download', id: 'btn-export' }),
         button(t('settings.import'), importDialog, { icon: 'upload', id: 'btn-import' }),
-        button(t('settings.reset'), () => void resetGame(), { icon: 'trash', kind: 'danger', id: 'btn-reset' }),
+        button(t('settings.reset'), () => void resetGame(), {
+          icon: 'trash',
+          kind: 'danger',
+          id: 'btn-reset',
+        }),
       ),
     );
   };

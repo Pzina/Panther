@@ -129,7 +129,11 @@ export class AudioEngine {
 
   private buildAmbience(): void {
     const ctx = this.ctx!;
-    const make = (type: BiquadFilterType, freq: number, q = 0.7): { gain: GainNode; filter: BiquadFilterNode } => {
+    const make = (
+      type: BiquadFilterType,
+      freq: number,
+      q = 0.7,
+    ): { gain: GainNode; filter: BiquadFilterNode } => {
       const src = this.noiseSource();
       const filter = ctx.createBiquadFilter();
       filter.type = type;
@@ -269,7 +273,14 @@ export class AudioEngine {
     filter.connect(gain).connect(this.musicBus);
   }
 
-  private pluck(freq: number, time: number, length: number, level: number, type: OscillatorType, echo: boolean): void {
+  private pluck(
+    freq: number,
+    time: number,
+    length: number,
+    level: number,
+    type: OscillatorType,
+    echo: boolean,
+  ): void {
     const ctx = this.ctx!;
     const osc = ctx.createOscillator();
     osc.type = type;
@@ -303,7 +314,14 @@ export class AudioEngine {
     }
   }
 
-  private chirp(time: number, from: number, to: number, length: number, level: number, type: OscillatorType = 'sine'): void {
+  private chirp(
+    time: number,
+    from: number,
+    to: number,
+    length: number,
+    level: number,
+    type: OscillatorType = 'sine',
+  ): void {
     const ctx = this.ctx!;
     const osc = ctx.createOscillator();
     osc.type = type;

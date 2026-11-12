@@ -14,19 +14,28 @@ function run(model: FightModel, reel: (m: FightModel) => boolean, maxSeconds = 1
 
 describe('fight model', () => {
   it('snaps the line when the player never stops reeling', () => {
-    const model = new FightModel(buildFightParams(getSpecies('bar'), 0.5, stats, 'beginner', false), new Rng(1));
+    const model = new FightModel(
+      buildFightParams(getSpecies('bar'), 0.5, stats, 'beginner', false),
+      new Rng(1),
+    );
     run(model, () => true);
     expect(model.status).toBe('snapped');
   });
 
   it('lets the fish go when the player never reels', () => {
-    const model = new FightModel(buildFightParams(getSpecies('bar'), 0.5, stats, 'beginner', false), new Rng(1));
+    const model = new FightModel(
+      buildFightParams(getSpecies('bar'), 0.5, stats, 'beginner', false),
+      new Rng(1),
+    );
     run(model, () => false);
     expect(model.status).toBe('escaped');
   });
 
   it('lands the fish when the tension is kept in the safe zone', () => {
-    const model = new FightModel(buildFightParams(getSpecies('gobie'), 0.5, stats, 'beginner', false), new Rng(2));
+    const model = new FightModel(
+      buildFightParams(getSpecies('gobie'), 0.5, stats, 'beginner', false),
+      new Rng(2),
+    );
     run(model, (m) => m.tension < m.safeCenter);
     expect(model.status).toBe('caught');
     expect(model.time).toBeGreaterThan(2);
@@ -59,7 +68,11 @@ describe('fight model', () => {
       const rng = new Rng(77);
       let wins = 0;
       for (let i = 0; i < 200; i++) {
-        if (autoFight(buildFightParams(getSpecies(id), 0.5, stats, 'beginner', false), rng, 0.7).status === 'caught') wins++;
+        if (
+          autoFight(buildFightParams(getSpecies(id), 0.5, stats, 'beginner', false), rng, 0.7).status ===
+          'caught'
+        )
+          wins++;
       }
       return wins / 200;
     };
@@ -70,7 +83,10 @@ describe('fight model', () => {
   });
 
   it('exposes every behaviour', () => {
-    const jumper = new FightModel(buildFightParams(getSpecies('brochet'), 0.5, stats, 'still', false, true), new Rng(4));
+    const jumper = new FightModel(
+      buildFightParams(getSpecies('brochet'), 0.5, stats, 'still', false, true),
+      new Rng(4),
+    );
     let sawWarning = false;
     run(jumper, (m) => {
       if (m.jumpWarning > 0) sawWarning = true;
@@ -78,16 +94,26 @@ describe('fight model', () => {
     });
     expect(sawWarning).toBe(true);
 
-    const cunning = new FightModel(buildFightParams(getSpecies('dorade'), 0.5, stats, 'beginner', false, true), new Rng(5));
+    const cunning = new FightModel(
+      buildFightParams(getSpecies('dorade'), 0.5, stats, 'beginner', false, true),
+      new Rng(5),
+    );
     run(cunning, (m) => m.tension < m.safeCenter, 40);
     expect(cunning.flips).toBeGreaterThan(0);
 
-    const diver = new FightModel(buildFightParams(getSpecies('sole'), 0.5, stats, 'beginner', false, true), new Rng(6));
+    const diver = new FightModel(
+      buildFightParams(getSpecies('sole'), 0.5, stats, 'beginner', false, true),
+      new Rng(6),
+    );
     let sawSurge = false;
-    run(diver, (m) => {
-      if (m.surge > 0) sawSurge = true;
-      return m.tension < m.safeCenter;
-    }, 40);
+    run(
+      diver,
+      (m) => {
+        if (m.surge > 0) sawSurge = true;
+        return m.tension < m.safeCenter;
+      },
+      40,
+    );
     expect(sawSurge).toBe(true);
   });
 });

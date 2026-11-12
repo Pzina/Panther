@@ -4,6 +4,10 @@ const path = new URL('../src/i18n/fr.json', import.meta.url);
 const current = JSON.parse(readFileSync(path, 'utf8'));
 const extra = JSON.parse(readFileSync(0, 'utf8'));
 const merged = { ...current, ...extra };
-const sorted = Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]]));
+const sorted = Object.fromEntries(
+  Object.keys(merged)
+    .sort()
+    .map((k) => [k, merged[k]]),
+);
 writeFileSync(path, JSON.stringify(sorted, null, 2) + '\n');
 console.log(`${Object.keys(sorted).length} keys`);

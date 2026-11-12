@@ -21,7 +21,8 @@ const PATHS: Record<string, string> = {
   rain: '<path d="M7 14a4 4 0 01-.5-8 5.5 5.5 0 0110.6 1.2A3.5 3.5 0 0117 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
   storm: '<path d="M7 14a4 4 0 01-.5-8 5.5 5.5 0 0110.6 1.2A3.5 3.5 0 0117 14zM12.5 13l-3 4.5h3.5l-2 4"/>',
   fog: '<path d="M4 7h16M6 11h14M4 15h12M8 19h10"/>',
-  sparkle: '<path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>',
+  sparkle:
+    '<path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>',
   anchor: '<circle cx="12" cy="4.5" r="2"/><path d="M12 6.5V21M5 13a7 7 0 0014 0M8.5 10h7"/>',
   home: '<path d="M4 11l8-7 8 7M6 10v10h12V10M10 20v-5h4v5"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
@@ -47,14 +48,17 @@ const PATHS: Record<string, string> = {
   calendar: '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10.5h16M8 3.5v4M16 3.5v4"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   pin: '<path d="M12 21s7-6.2 7-11.5a7 7 0 00-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
-  heart: '<path d="M12 20s-7.5-4.6-7.5-10.2a4.2 4.2 0 017.5-2.6 4.2 4.2 0 017.5 2.6C19.5 15.4 12 20 12 20z"/>',
+  heart:
+    '<path d="M12 20s-7.5-4.6-7.5-10.2a4.2 4.2 0 017.5-2.6 4.2 4.2 0 017.5 2.6C19.5 15.4 12 20 12 20z"/>',
   net: '<path d="M5 5h14l-2 11a5 5 0 01-10 0zM9.5 5l.8 15M14.5 5l-.8 15M6 10h12M7 14.5h10"/>',
-  scroll: '<path d="M8 4h11v13a3 3 0 01-3 3H7a3 3 0 01-3-3v-1h9v1a3 3 0 003 3M8 4a2 2 0 00-2 2v10M10.5 8.5h5.5M10.5 12h5.5"/>',
+  scroll:
+    '<path d="M8 4h11v13a3 3 0 01-3 3H7a3 3 0 01-3-3v-1h9v1a3 3 0 003 3M8 4a2 2 0 00-2 2v10M10.5 8.5h5.5M10.5 12h5.5"/>',
   gift: '<path d="M4.5 11h15v9h-15zM3 7.5h18V11H3zM12 7.5V20M12 7.5C10 3.5 6 4.5 7.5 7.5M12 7.5c2-4 6-3 4.5 0"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.6"/>',
   trash: '<path d="M5 7h14M9.5 7V4h5v3M7 7l1 13h8l1-13"/>',
   sort: '<path d="M7 5v14M7 19l-3-3M7 19l3-3M17 19V5M17 5l-3 3M17 5l3 3"/>',
-  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+  target:
+    '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
   crown: '<path d="M4 19h16M4.5 16L3 7l5 4 4-7 4 7 5-4-1.5 9z"/>',
   ruler: '<path d="M3 16L16 3l5 5L8 21zM7 12l2 2M10 9l2 2M13 6l2 2"/>',
   weight: '<path d="M6 9h12l2 11H4zM9 9a3 3 0 016 0"/>',
@@ -69,13 +73,16 @@ const PATHS: Record<string, string> = {
   bed: '<path d="M3 19V7M3 15h18v4M21 15v-2.5a3 3 0 00-3-3h-7V15"/><circle cx="7" cy="11.5" r="1.8"/>',
   bobber: '<path d="M12 3v5M12 16v5"/><circle cx="12" cy="12" r="4.5"/><path d="M7.5 12h9"/>',
   level: '<path d="M12 20V5M6 11l6-6 6 6"/>',
-  aquarium: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 13c1.5-2 4-2.2 6-.5l2.5-1.5v4l-2.5-1.5c-2 1.7-4.5 1.5-6-.5zM3 9.5h18"/>',
+  aquarium:
+    '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 13c1.5-2 4-2.2 6-.5l2.5-1.5v4l-2.5-1.5c-2 1.7-4.5 1.5-6-.5zM3 9.5h18"/>',
   bag: '<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 016 0v2"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
   leaf: '<path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15M5 19c3-5 6-8 10-10"/>',
   snow: '<path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>',
-  flower: '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5c-2-6 2-6 0 0M14.5 12c6-2 6 2 0 0M12 14.5c2 6-2 6 0 0M9.5 12c-6 2-6-2 0 0"/>',
-  question: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.7-1.5 1.2-1.5 2.5M12 17v.5"/>',
+  flower:
+    '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5c-2-6 2-6 0 0M14.5 12c6-2 6 2 0 0M12 14.5c2 6-2 6 0 0M9.5 12c-6 2-6-2 0 0"/>',
+  question:
+    '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.7-1.5 1.2-1.5 2.5M12 17v.5"/>',
 };
 
 export function iconSvg(name: string, size = 24): string {
@@ -118,7 +125,8 @@ const RARITY_SHAPES: Record<Rarity, string> = {
   rare: '<path d="M12 4l9 15.5H3z"/>',
   epic: '<path d="M12 3l8.5 6.2-3.2 10.3H6.7L3.5 9.2z"/>',
   legendary: '<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/>',
-  mythic: '<path d="M12 1.5l2.3 5 5.1-2-2 5.1 5 2.4-5 2.3 2 5.1-5.1-2-2.3 5-2.3-5-5.1 2 2-5.1-5-2.3 5-2.4-2-5.1 5.1 2z"/>',
+  mythic:
+    '<path d="M12 1.5l2.3 5 5.1-2-2 5.1 5 2.4-5 2.3 2 5.1-5.1-2-2.3 5-2.3-5-5.1 2 2-5.1-5-2.3 5-2.4-2-5.1 5.1 2z"/>',
 };
 
 /**

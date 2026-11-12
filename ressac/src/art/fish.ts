@@ -54,7 +54,8 @@ function geometry(art: FishArt): Geometry {
     length = Math.max(84, 96 * art.len);
   }
   // Tall fins must stay inside the view box: shrink the whole fish when needed.
-  const finFrac = art.dorsal === 'sail' ? 0.9 : art.dorsal === 'tall' ? 0.62 : art.dorsal === 'spiny' ? 0.42 : 0.3;
+  const finFrac =
+    art.dorsal === 'sail' ? 0.9 : art.dorsal === 'tall' ? 0.62 : art.dorsal === 'spiny' ? 0.42 : 0.3;
   const crest = art.extra === 'crest' || art.extra === 'lure' ? 0.5 : 0;
   const headroom = (PROFILES[art.body].top + Math.max(finFrac, crest)) * height;
   if (headroom > CY - 8) {
@@ -275,7 +276,12 @@ function paletteFor(art: FishArt, variant: VariantId): Palette {
     case 'golden':
       return { c1: '#f0b429', c2: '#fde08a', c3: '#d98c0a', pupil: '#3a2a08' };
     case 'shimmer':
-      return { c1: mix(art.c1, '#b48cf2', 0.5), c2: '#ffffff', c3: mix(art.c3, '#7ee0f0', 0.5), pupil: '#1b2030' };
+      return {
+        c1: mix(art.c1, '#b48cf2', 0.5),
+        c2: '#ffffff',
+        c3: mix(art.c3, '#7ee0f0', 0.5),
+        pupil: '#1b2030',
+      };
     default:
       return { c1: art.c1, c2: art.c2, c3: art.c3, pupil: '#1b2030' };
   }
@@ -297,7 +303,8 @@ export function fishSvg(art: FishArt, options: FishSvgOptions = {}): string {
   const body = bodyPath(g);
   const tail = tailPath(g, art);
   const dorsal = dorsalPath(g, art);
-  const anal = art.body === 'eel' ? ridgeFin(g, 0.3, 0.92, 0.16, ribbon, true) : ridgeFin(g, 0.6, 0.8, 0.26, bump, true);
+  const anal =
+    art.body === 'eel' ? ridgeFin(g, 0.3, 0.92, 0.16, ribbon, true) : ridgeFin(g, 0.6, 0.8, 0.26, bump, true);
   const size = options.pixelSize
     ? ` width="${options.pixelSize}" height="${Math.round((options.pixelSize * VIEW_H) / VIEW_W)}"`
     : '';
@@ -307,7 +314,9 @@ export function fishSvg(art: FishArt, options: FishSvgOptions = {}): string {
   const snoutX = xAt(g, 0);
   let extraBack = '';
   let extraFront = '';
-  const finFill = options.silhouette ? '' : ` fill="${pal.c3}" stroke="${outline}" stroke-width="2" stroke-linejoin="round"`;
+  const finFill = options.silhouette
+    ? ''
+    : ` fill="${pal.c3}" stroke="${outline}" stroke-width="2" stroke-linejoin="round"`;
   if (art.extra === 'sword') {
     extraBack += `<path d="M${n(snoutX + 6)} ${n(CY - 3)}L${n(snoutX - 30)} ${n(CY + 1)}L${n(snoutX + 6)} ${n(CY + 4)}Z"${finFill}/>`;
   }
@@ -375,7 +384,10 @@ export function fishSvg(art: FishArt, options: FishSvgOptions = {}): string {
     const count = art.body === 'angler' ? 6 : 4;
     for (let i = 0; i < count; i++) {
       const tx = snoutX + 4 + i * Math.max(4, L * 0.035);
-      const ty = art.body === 'angler' ? CY + H * (0.07 + 0.045 * Math.sin((i / (count - 1)) * Math.PI) * 3) : mouthY + 1;
+      const ty =
+        art.body === 'angler'
+          ? CY + H * (0.07 + 0.045 * Math.sin((i / (count - 1)) * Math.PI) * 3)
+          : mouthY + 1;
       teeth += `<path d="M${n(tx)} ${n(ty)}l2 ${n(-6 - (i % 2) * 2)}l2 ${n(6 + (i % 2) * 2)}z" fill="#ffffff" stroke="${outline}" stroke-width="0.8"/>`;
     }
   }
@@ -398,7 +410,8 @@ export function fishSvg(art: FishArt, options: FishSvgOptions = {}): string {
       ? `<linearGradient id="${uid}-sh" x1="0" y1="0" x2="1" y2="0.4" gradientUnits="objectBoundingBox" spreadMethod="reflect"><stop offset="0" stop-color="#ff9ad5"/><stop offset="0.25" stop-color="#9ad8ff"/><stop offset="0.5" stop-color="#b9a2ff"/><stop offset="0.75" stop-color="#9affd0"/><stop offset="1" stop-color="#ffe79a"/>${options.still ? '' : '<animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="2 0" dur="3s" repeatCount="indefinite"/>'}</linearGradient>`
       : ''
   }</defs>`;
-  const fin = (d: string): string => (d ? `<path d="${d}" fill="${pal.c3}" stroke="${outline}" stroke-width="2" stroke-linejoin="round"/>` : '');
+  const fin = (d: string): string =>
+    d ? `<path d="${d}" fill="${pal.c3}" stroke="${outline}" stroke-width="2" stroke-linejoin="round"/>` : '';
   const patternOpacity = shimmer ? 0.35 : 1;
   const deco =
     variant === 'golden'

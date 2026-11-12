@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(
+    caches.match(req, { ignoreSearch: true, ignoreVary: true }).then(
       (hit) =>
         hit ||
         fetch(req).catch(() => (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())),

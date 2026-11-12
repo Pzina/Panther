@@ -19,13 +19,17 @@ export function missionDone(state: GameState, missionId: string): boolean {
   return index >= 0 && (state.story.finished || state.story.index > index);
 }
 
-export type LockReason = { kind: 'level'; value: number } | { kind: 'reputation'; value: number } | { kind: 'mission'; value: string };
+export type LockReason =
+  | { kind: 'level'; value: number }
+  | { kind: 'reputation'; value: number }
+  | { kind: 'mission'; value: string };
 
 /** Requirement that still hides an article, if any. */
 export function lockReason(state: GameState, item: Item): LockReason | null {
   if (item.mission && !missionDone(state, item.mission)) return { kind: 'mission', value: item.mission };
   if (item.level && state.level < item.level) return { kind: 'level', value: item.level };
-  if (item.reputation && state.reputation < item.reputation) return { kind: 'reputation', value: item.reputation };
+  if (item.reputation && state.reputation < item.reputation)
+    return { kind: 'reputation', value: item.reputation };
   return null;
 }
 

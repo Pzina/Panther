@@ -37,7 +37,12 @@ export class PortScene extends BaseScene {
     this.quay = this.add.graphics().setDepth(12);
     this.boat = this.add.graphics().setDepth(20);
     this.lamps = this.add.graphics().setDepth(64);
-    drawBoatSide(this.boat, getCosmetic(game.state.cosmetics.boatColor), getBoat(game.state.equipment.boat).tier, 0.95);
+    drawBoatSide(
+      this.boat,
+      getCosmetic(game.state.cosmetics.boatColor),
+      getBoat(game.state.equipment.boat).tier,
+      0.95,
+    );
     this.syncSound();
   }
 
@@ -193,7 +198,10 @@ export class PortScene extends BaseScene {
     const calm = game.state.settings.reducedMotion ? 0.3 : 1;
     const { W, H } = this;
 
-    this.boat.setPosition(W * 0.5 + Math.sin(this.t * 0.4) * 3 * calm, H * 0.775 + Math.sin(this.t * 1.2) * 3 * calm);
+    this.boat.setPosition(
+      W * 0.5 + Math.sin(this.t * 0.4) * 3 * calm,
+      H * 0.775 + Math.sin(this.t * 1.2) * 3 * calm,
+    );
     this.boat.setRotation(Math.sin(this.t * 1.0 + 1) * 0.04 * calm);
 
     const e = this.extras;

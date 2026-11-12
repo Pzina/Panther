@@ -11,7 +11,9 @@ export async function hudState(page: Page): Promise<string> {
 
 /** Holds the finger on the water, releases near the sweet spot of the power gauge. */
 export async function cast(page: Page): Promise<void> {
-  await page.waitForFunction(() => !document.querySelector('.curtain.is-in, .curtain.is-out, .modal-backdrop'));
+  await page.waitForFunction(
+    () => !document.querySelector('.curtain.is-in, .curtain.is-out, .modal-backdrop'),
+  );
   await page.mouse.move(195, 520);
   await page.mouse.down();
   await page.waitForFunction(
@@ -32,7 +34,13 @@ export async function fight(page: Page): Promise<void> {
   while (Date.now() < deadline) {
     const d = await page.evaluate(() => {
       const ds = document.getElementById('fishing-hud')?.dataset ?? {};
-      return { state: ds.state, t: Number(ds.tension), lo: Number(ds.low), hi: Number(ds.high), jump: ds.jump === '1' };
+      return {
+        state: ds.state,
+        t: Number(ds.tension),
+        lo: Number(ds.low),
+        hi: Number(ds.high),
+        jump: ds.jump === '1',
+      };
     });
     if (d.state !== 'fight') break;
     const want = !d.jump && d.t < (d.lo + d.hi) / 2;

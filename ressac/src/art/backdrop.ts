@@ -46,7 +46,16 @@ export function skyColors(hour: number, weather: Weather): { top: number; bottom
   let top = mixNum(a.top, b.top, t);
   let bottom = mixNum(a.bottom, b.bottom, t);
   const grey = weather === 'storm' ? 0x4a5562 : weather === 'fog' ? 0xc2ccd2 : 0x8a98a6;
-  const amount = weather === 'storm' ? 0.7 : weather === 'rain' ? 0.55 : weather === 'fog' ? 0.5 : weather === 'clouds' ? 0.3 : 0;
+  const amount =
+    weather === 'storm'
+      ? 0.7
+      : weather === 'rain'
+        ? 0.55
+        : weather === 'fog'
+          ? 0.5
+          : weather === 'clouds'
+            ? 0.3
+            : 0;
   if (amount > 0) {
     const dark = nightness(hour);
     const g = mixNum(grey, 0x101828, dark * 0.75);
@@ -122,7 +131,11 @@ export class Backdrop {
       r: rng.range(0.5, 1.5),
       p: rng.range(0, 6.28),
     }));
-    this.drops = Array.from({ length: 70 }, () => ({ x: rng.range(-40, W), y: rng.range(0, H), v: rng.range(520, 760) }));
+    this.drops = Array.from({ length: 70 }, () => ({
+      x: rng.range(-40, W),
+      y: rng.range(0, H),
+      v: rng.range(520, 760),
+    }));
     this.glints = Array.from({ length: 16 }, () => ({
       x: rng.range(10, W - 10),
       y: rng.range(this.horizonY + 14, H - 40),
@@ -159,7 +172,10 @@ export class Backdrop {
     this.sky.fillGradientStyle(top, top, bottom, bottom, 1);
     this.sky.fillRect(0, 0, W, horizonY + 2);
 
-    this.darkness = Math.min(0.72, nightness(hour) * 0.58 + (weather === 'storm' ? 0.16 : 0) + (zone.permanentNight ? 0.14 : 0));
+    this.darkness = Math.min(
+      0.72,
+      nightness(hour) * 0.58 + (weather === 'storm' ? 0.16 : 0) + (zone.permanentNight ? 0.14 : 0),
+    );
 
     // Sun or moon.
     const c = this.celestial;
@@ -254,7 +270,13 @@ export class Backdrop {
       case 'etang': {
         hill(-20, W + 20, 26, landDark, 0.5);
         for (let i = 0; i < 12; i++) {
-          this.tree(g, rng.range(0, W), y - rng.range(2, 14), rng.range(1, 1.9), i % 2 === 0 ? landDark : land);
+          this.tree(
+            g,
+            rng.range(0, W),
+            y - rng.range(2, 14),
+            rng.range(1, 1.9),
+            i % 2 === 0 ? landDark : land,
+          );
         }
         // Reeds on the banks.
         g.lineStyle(2, landDark, 1);
@@ -364,7 +386,9 @@ export class Backdrop {
     const zone = getZone(this.cfg.zone);
     const weather = this.cfg.weather();
     const p = this.palette();
-    const rough = (zone.gimmick === 'swell' ? 1.7 : zone.gimmick === 'still' ? 0.45 : 1) * (weather === 'storm' ? 1.8 : weather === 'rain' ? 1.2 : 1);
+    const rough =
+      (zone.gimmick === 'swell' ? 1.7 : zone.gimmick === 'still' ? 0.45 : 1) *
+      (weather === 'storm' ? 1.8 : weather === 'rain' ? 1.2 : 1);
     const speed = this.cfg.reducedMotion() ? 0.25 : 1;
     const rows = 10;
     for (let i = 0; i < rows; i++) {
@@ -374,10 +398,15 @@ export class Backdrop {
       const k = (Math.PI * 2) / (46 + 110 * f);
       const phase = this.time * speed * (0.5 + f * 0.9) * (i % 2 === 0 ? 1 : -0.7) + i * 1.7;
       const drift = zone.gimmick === 'current' ? this.time * speed * 1.4 : 0;
-      g.lineStyle(1.2 + f * 2.2, mixNum(p.top, 0xffffff, weather === 'glow' ? 0.5 : 0.32), 0.26 + 0.22 * (1 - f));
+      g.lineStyle(
+        1.2 + f * 2.2,
+        mixNum(p.top, 0xffffff, weather === 'glow' ? 0.5 : 0.32),
+        0.26 + 0.22 * (1 - f),
+      );
       g.beginPath();
       for (let x = -10; x <= W + 10; x += 13) {
-        const yy = y + Math.sin(x * k + phase - drift) * amp + Math.sin(x * k * 0.37 + phase * 0.6) * amp * 0.5;
+        const yy =
+          y + Math.sin(x * k + phase - drift) * amp + Math.sin(x * k * 0.37 + phase * 0.6) * amp * 0.5;
         if (x === -10) g.moveTo(x, yy);
         else g.lineTo(x, yy);
       }
@@ -459,7 +488,17 @@ export class Backdrop {
   }
 
   destroy(): void {
-    for (const g of [this.sky, this.stars, this.celestial, this.cloudLayer, this.land, this.water, this.waves, this.overlay, this.weatherFx]) {
+    for (const g of [
+      this.sky,
+      this.stars,
+      this.celestial,
+      this.cloudLayer,
+      this.land,
+      this.water,
+      this.waves,
+      this.overlay,
+      this.weatherFx,
+    ]) {
       g.destroy();
     }
   }

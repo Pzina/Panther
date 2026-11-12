@@ -7,7 +7,11 @@ export const fishTextureKey = (speciesId: string, variant: VariantId = 'normal')
   `fish-${speciesId}-${variant}`;
 
 /** Rasterises a procedural fish into a Phaser texture (resolves immediately when it exists). */
-export function ensureFishTexture(scene: Phaser.Scene, speciesId: string, variant: VariantId = 'normal'): Promise<string> {
+export function ensureFishTexture(
+  scene: Phaser.Scene,
+  speciesId: string,
+  variant: VariantId = 'normal',
+): Promise<string> {
   const key = fishTextureKey(speciesId, variant);
   if (scene.textures.exists(key)) return Promise.resolve(key);
   const species = SPECIES.find((s) => s.id === speciesId);

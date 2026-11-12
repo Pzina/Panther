@@ -12,12 +12,19 @@ export function achievementsScreen(): Screen {
     clear(shell.body);
     const unlocked = ACHIEVEMENTS.filter((a) => state.achievements[a.id]).length;
     shell.body.append(
-      h('div', { class: 'dex-total' }, h('span', null, t('ach.count', { n: unlocked, max: ACHIEVEMENTS.length })), progress(unlocked, ACHIEVEMENTS.length)),
+      h(
+        'div',
+        { class: 'dex-total' },
+        h('span', null, t('ach.count', { n: unlocked, max: ACHIEVEMENTS.length })),
+        progress(unlocked, ACHIEVEMENTS.length),
+      ),
       h(
         'div',
         { class: 'list' },
         ...[...ACHIEVEMENTS]
-          .sort((a, b) => Number(Boolean(state.achievements[b.id])) - Number(Boolean(state.achievements[a.id])))
+          .sort(
+            (a, b) => Number(Boolean(state.achievements[b.id])) - Number(Boolean(state.achievements[a.id])),
+          )
           .map((a) => {
             const when = state.achievements[a.id];
             const value = Math.min(a.target, a.value(state));
@@ -31,8 +38,17 @@ export function achievementsScreen(): Screen {
                 h('b', null, a.name),
                 h('span', { class: 'row-sub' }, a.description),
                 when
-                  ? h('span', { class: 'row-sub good' }, t('ach.unlocked', { date: new Date(when).toLocaleDateString('fr-FR') }))
-                  : h('div', { class: 'progress-line' }, progress(value, a.target), h('span', null, `${formatNumber(value)}/${formatNumber(a.target)}`)),
+                  ? h(
+                      'span',
+                      { class: 'row-sub good' },
+                      t('ach.unlocked', { date: new Date(when).toLocaleDateString('fr-FR') }),
+                    )
+                  : h(
+                      'div',
+                      { class: 'progress-line' },
+                      progress(value, a.target),
+                      h('span', null, `${formatNumber(value)}/${formatNumber(a.target)}`),
+                    ),
               ),
             );
           }),

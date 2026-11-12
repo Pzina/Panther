@@ -54,9 +54,14 @@ describe('catch table', () => {
   });
 
   it('favours preferred baits, hours and weather', () => {
-    const chance = (c: FishingContext, id: string) => catchOdds(c).find((o) => o.species.id === id)?.chance ?? 0;
-    expect(chance(ctx({ depth: 0.6, bait: 'crevette' }), 'vieille')).toBeGreaterThan(chance(ctx({ depth: 0.6 }), 'vieille'));
-    expect(chance(ctx({ depth: 0.8, phase: 'night' }), 'congre')).toBeGreaterThan(chance(ctx({ depth: 0.8 }), 'congre'));
+    const chance = (c: FishingContext, id: string) =>
+      catchOdds(c).find((o) => o.species.id === id)?.chance ?? 0;
+    expect(chance(ctx({ depth: 0.6, bait: 'crevette' }), 'vieille')).toBeGreaterThan(
+      chance(ctx({ depth: 0.6 }), 'vieille'),
+    );
+    expect(chance(ctx({ depth: 0.8, phase: 'night' }), 'congre')).toBeGreaterThan(
+      chance(ctx({ depth: 0.8 }), 'congre'),
+    );
     expect(chance(ctx({ depth: 0.6, weather: 'rain', phase: 'dusk' }), 'bar')).toBeGreaterThan(
       chance(ctx({ depth: 0.6, weather: 'sun', phase: 'dusk' }), 'bar'),
     );
@@ -93,7 +98,13 @@ describe('catch table', () => {
         (['dawn', 'day', 'dusk', 'night'] as const).some((phase) =>
           (['sun', 'clouds', 'rain', 'storm', 'fog', 'glow'] as const).some((weather) =>
             catchTable(
-              ctx({ zone, phase, weather, depth: (species.depth[0] + species.depth[1]) / 2, bait: species.baits[0] ?? 'mie' }),
+              ctx({
+                zone,
+                phase,
+                weather,
+                depth: (species.depth[0] + species.depth[1]) / 2,
+                bait: species.baits[0] ?? 'mie',
+              }),
             ).some((e) => e.species.id === species.id),
           ),
         ),
@@ -133,7 +144,9 @@ describe('rolls', () => {
     expect(rollSpecies(ctx({ zone: 'fosse', depth: 0.9, bait: 'leurre' }), rng).id).toBe('veilleuse');
     expect(rollSpecies(ctx({ zone: 'fosse', depth: 0.2, bait: 'leurre' }), rng).id).not.toBe('veilleuse');
     for (let i = 0; i < 500; i++) {
-      expect(rollSpecies(ctx({ zone: 'fosse', depth: 0.95, bait: 'lumignon', luck: 2 }), rng).id).not.toBe('veilleuse');
+      expect(rollSpecies(ctx({ zone: 'fosse', depth: 0.95, bait: 'lumignon', luck: 2 }), rng).id).not.toBe(
+        'veilleuse',
+      );
     }
   });
 

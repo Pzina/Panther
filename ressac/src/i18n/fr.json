@@ -106,7 +106,7 @@
   "dex.depth.deep": "au loin",
   "dex.depth.mid": "à mi-distance",
   "dex.depth.shallow": "près du bateau",
-  "dex.firstDay": "Première prise : jour {n}",
+  "dex.firstCatch": "Première prise",
   "dex.hint": "Indice",
   "dex.hours": "Heures",
   "dex.milestone": "{p} %",

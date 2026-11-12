@@ -87,7 +87,10 @@ const cache = new Map<CharacterId, string>();
 export function portraitSvg(who: CharacterId): string {
   let svg = cache.get(who);
   if (!svg) {
-    svg = (who === 'herve' ? herve() : who === 'jo' ? jo() : who === 'nell' ? nell() : maelle()).replace(/(\d)\.(\d)00\b/g, '$1.$2');
+    svg = (who === 'herve' ? herve() : who === 'jo' ? jo() : who === 'nell' ? nell() : maelle()).replace(
+      /(\d)\.(\d)00\b/g,
+      '$1.$2',
+    );
     // Each portrait needs its own clip id when several are on screen.
     svg = svg.split('"pc"').join(`"pc-${who}"`).split('url(#pc)').join(`url(#pc-${who})`);
     cache.set(who, svg);

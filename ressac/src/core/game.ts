@@ -168,7 +168,11 @@ export class Game {
   }
 
   /** Decides what will bite, when, and how long the player has to react. */
-  planBite(depth: number, perfect: boolean, opts: { luck?: number; delayMult?: number; force?: string } = {}): BitePlan {
+  planBite(
+    depth: number,
+    perfect: boolean,
+    opts: { luck?: number; delayMult?: number; force?: string } = {},
+  ): BitePlan {
     const stats = this.stats();
     const luck = (perfect ? BALANCE.cast.perfectLuck : 0) + (opts.luck ?? 0);
     const ctx = this.context(depth, luck);
@@ -187,7 +191,13 @@ export class Game {
     );
     const fakeBites = this.rng.chance(BALANCE.bite.fakeBiteChance) ? this.rng.int(1, 2) : 0;
     this.state.rngState = this.rng.state;
-    return { species, fish, delay, window: hookWindow(species, stats.hookWindow, this.state.zone), fakeBites };
+    return {
+      species,
+      fish,
+      delay,
+      window: hookWindow(species, stats.hookWindow, this.state.zone),
+      fakeBites,
+    };
   }
 
   private consumeBait(): void {
@@ -197,7 +207,11 @@ export class Game {
     const left = Math.max(0, (this.state.baits[id] ?? 0) - 1);
     this.state.baits[id] = left;
     if (left === 0) {
-      this.events.emit('toast', { text: `Plus de « ${bait.name} » : retour à la mie de pain.`, kind: 'warn', icon: 'bait' });
+      this.events.emit('toast', {
+        text: `Plus de « ${bait.name} » : retour à la mie de pain.`,
+        kind: 'warn',
+        icon: 'bait',
+      });
     }
   }
 
@@ -415,7 +429,11 @@ export class Game {
   canCraft(baitId: string): boolean {
     const bait = getBait(baitId);
     if (!bait.craft) return false;
-    if (bait.mission && !(this.state.story.finished || this.storyIndexOf(bait.mission) < this.state.story.index)) return false;
+    if (
+      bait.mission &&
+      !(this.state.story.finished || this.storyIndexOf(bait.mission) < this.state.story.index)
+    )
+      return false;
     return craftIngredients(this.state, bait) !== null;
   }
 
@@ -440,7 +458,8 @@ export class Game {
 
   zoneAccess(zone: ZoneId): { ok: true } | { ok: false; reason: 'locked' | 'boat' } {
     if (!this.state.unlockedZones.includes(zone)) return { ok: false, reason: 'locked' };
-    if (getBoat(this.state.equipment.boat).tier < getZone(zone).boatTier) return { ok: false, reason: 'boat' };
+    if (getBoat(this.state.equipment.boat).tier < getZone(zone).boatTier)
+      return { ok: false, reason: 'boat' };
     return { ok: true };
   }
 
@@ -492,7 +511,8 @@ export class Game {
     if (reward.coins) state.coins += reward.coins;
     if (reward.reputation) state.reputation += reward.reputation;
     if (reward.baits) {
-      for (const [id, count] of Object.entries(reward.baits)) state.baits[id] = (state.baits[id] ?? 0) + count;
+      for (const [id, count] of Object.entries(reward.baits))
+        state.baits[id] = (state.baits[id] ?? 0) + count;
     }
     if (reward.item && !state.owned.includes(reward.item)) state.owned.push(reward.item);
     if (reward.unlockZone && !state.unlockedZones.includes(reward.unlockZone)) {
@@ -619,7 +639,9 @@ export class Game {
   // ───────────────────────── Gentle retention ─────────────────────────
 
   /** Reward of the daily login bonus, or null when it was already taken today. */
-  loginBonus(now: number = Date.now()): { day: number; reward: { coins?: number; baits?: Record<string, number> } } | null {
+  loginBonus(
+    now: number = Date.now(),
+  ): { day: number; reward: { coins?: number; baits?: Record<string, number> } } | null {
     const key = realDateKey(now);
     const login = this.state.login;
     if (login.lastDate === key) return null;

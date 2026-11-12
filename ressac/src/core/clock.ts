@@ -15,7 +15,7 @@ export function dayOf(clockMinutes: number): number {
 
 /** Hour of the day as a float in [0, 24). */
 export function hourOf(clockMinutes: number): number {
-  return ((clockMinutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY / 60;
+  return (((clockMinutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY) / 60;
 }
 
 export function phaseOfHour(hour: number): DayPhase {

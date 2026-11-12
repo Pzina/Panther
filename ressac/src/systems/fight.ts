@@ -172,7 +172,8 @@ export class FightModel {
         if (this.time >= this.nextEvent) {
           // Changes direction: the safe zone flips to the other side of the gauge.
           this.targetCenter = 1 - this.targetCenter + this.rng.range(-0.06, 0.06);
-          if (Math.abs(this.targetCenter - 0.5) < 0.12) this.targetCenter = this.rng.chance(0.5) ? lo + 0.05 : hi - 0.05;
+          if (Math.abs(this.targetCenter - 0.5) < 0.12)
+            this.targetCenter = this.rng.chance(0.5) ? lo + 0.05 : hi - 0.05;
           this.flips += 1;
           this.scheduleEvent(2.6, 4.6);
         }
@@ -213,7 +214,7 @@ export class FightModel {
     const inSafe = this.inSafeZone;
     if (reeling) {
       // A long fight tires the fish: progress speeds up once the expected duration is over.
-      const fatigue = 1 + Math.max(0, this.time - this.expected) / this.expected * f.fatigue;
+      const fatigue = 1 + (Math.max(0, this.time - this.expected) / this.expected) * f.fatigue;
       this.distance -= this.reelRate * p.reelSpeed * fatigue * (inSafe ? 1 : f.outsideReelFactor) * dt;
     } else {
       this.distance = Math.min(1, this.distance + f.recoverRate * dt);

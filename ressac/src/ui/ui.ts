@@ -28,7 +28,11 @@ interface ModalHandle {
   close: () => void;
 }
 
-const SCENE_OF_MODE: Record<Exclude<Mode, 'boot'>, string> = { home: 'Title', port: 'Port', fishing: 'Fishing' };
+const SCENE_OF_MODE: Record<Exclude<Mode, 'boot'>, string> = {
+  home: 'Title',
+  port: 'Port',
+  fishing: 'Fishing',
+};
 
 /** Owns the HTML layers above the canvas: HUD, full screens, modals, toasts, transitions. */
 export class Ui {
@@ -224,7 +228,10 @@ export class Ui {
 
   // ───────────────────────── Modals ─────────────────────────
 
-  modal(content: HTMLElement, opts: { dismissible?: boolean; cls?: string; onClose?: () => void } = {}): () => void {
+  modal(
+    content: HTMLElement,
+    opts: { dismissible?: boolean; cls?: string; onClose?: () => void } = {},
+  ): () => void {
     const dismissible = opts.dismissible ?? true;
     const backdrop = h('div', { class: `modal-backdrop ${opts.cls ?? ''}`.trim() });
     const box = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, content);
@@ -288,7 +295,11 @@ export class Ui {
         iconName ? h('div', { class: 'dialog-icon' }, icon(iconName)) : null,
         h('h2', null, title),
         typeof body === 'string' ? h('p', null, body) : body,
-        h('div', { class: 'dialog-actions' }, button(okLabel, () => close(), { kind: 'primary', id: 'notice-ok' })),
+        h(
+          'div',
+          { class: 'dialog-actions' },
+          button(okLabel, () => close(), { kind: 'primary', id: 'notice-ok' }),
+        ),
       );
       const close = this.modal(content, { onClose: () => resolve() });
     });
@@ -311,15 +322,25 @@ export class Ui {
         portrait.innerHTML = portraitSvg(line.who);
         name.textContent = CHARACTERS[line.who].name;
         text.textContent = line.text;
-        (next.querySelector('.btn-label') as HTMLElement).textContent = index === lines.length - 1 ? 'Continuer' : 'Suivant';
+        (next.querySelector('.btn-label') as HTMLElement).textContent =
+          index === lines.length - 1 ? 'Continuer' : 'Suivant';
       };
       const advance = (): void => {
         index += 1;
         if (index >= lines.length) close();
         else show();
       };
-      const content = h('div', { class: 'dlg' }, portrait, h('div', { class: 'dlg-body' }, name, text, h('div', { class: 'dlg-actions' }, next)));
-      const close = this.modal(content, { cls: 'modal-bottom', dismissible: false, onClose: () => resolve() });
+      const content = h(
+        'div',
+        { class: 'dlg' },
+        portrait,
+        h('div', { class: 'dlg-body' }, name, text, h('div', { class: 'dlg-actions' }, next)),
+      );
+      const close = this.modal(content, {
+        cls: 'modal-bottom',
+        dismissible: false,
+        onClose: () => resolve(),
+      });
       show();
     });
   }
@@ -327,7 +348,12 @@ export class Ui {
   // ───────────────────────── Toasts ─────────────────────────
 
   toast(text: string, kind: 'info' | 'good' | 'warn' = 'info', iconName?: string): void {
-    const el = h('div', { class: `toast toast-${kind}`, role: 'status' }, iconName ? icon(iconName) : null, h('span', null, text));
+    const el = h(
+      'div',
+      { class: `toast toast-${kind}`, role: 'status' },
+      iconName ? icon(iconName) : null,
+      h('span', null, text),
+    );
     this.toastLayer.appendChild(el);
     while (this.toastLayer.children.length > 3) this.toastLayer.firstElementChild?.remove();
     setTimeout(() => el.classList.add('is-leaving'), 2600);
@@ -344,7 +370,8 @@ export class Ui {
 
   /** Shows queued notifications one after the other when nothing important is on screen. */
   flush(): void {
-    if (this.flushing || this.busy || this.switching || this.mode === 'boot' || this.holdNotifications()) return;
+    if (this.flushing || this.busy || this.switching || this.mode === 'boot' || this.holdNotifications())
+      return;
     const task = this.pending.shift();
     if (!task) return;
     this.flushing = true;
@@ -369,7 +396,12 @@ export function wait(ms: number): Promise<void> {
 export function screenShell(
   title: string,
   iconName: string,
-  opts: { tabs?: { id: string; label: string; icon?: string; badge?: () => boolean }[]; tab?: string; onTab?: (id: string) => void; right?: HTMLElement } = {},
+  opts: {
+    tabs?: { id: string; label: string; icon?: string; badge?: () => boolean }[];
+    tab?: string;
+    onTab?: (id: string) => void;
+    right?: HTMLElement;
+  } = {},
 ): { el: HTMLElement; body: HTMLElement; setTab: (id: string) => void; right: HTMLElement } {
   const body = h('div', { class: 'screen-body' });
   const right = opts.right ?? h('div', { class: 'screen-right' });

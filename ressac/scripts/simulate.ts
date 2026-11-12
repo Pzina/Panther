@@ -58,7 +58,13 @@ function fightOutcome(game: Game, species: Species, rng: Rng): { status: FightSt
     let seconds = 0;
     const samples = 24;
     for (let i = 0; i < samples; i++) {
-      const params = buildFightParams(species, sampler.next(), game.stats(), getZone(game.state.zone).gimmick, false);
+      const params = buildFightParams(
+        species,
+        sampler.next(),
+        game.stats(),
+        getZone(game.state.zone).gimmick,
+        false,
+      );
       const r = autoFight(params, sampler, sampler.range(0.55, 0.9));
       if (r.status === 'caught') win++;
       if (r.status === 'snapped') snap++;
@@ -68,7 +74,8 @@ function fightOutcome(game: Game, species: Species, rng: Rng): { status: FightSt
     fightCache.set(key, stats);
   }
   const roll = rng.next();
-  const status: FightStatus = roll < stats.win ? 'caught' : roll < stats.win + stats.snap ? 'snapped' : 'escaped';
+  const status: FightStatus =
+    roll < stats.win ? 'caught' : roll < stats.win + stats.snap ? 'snapped' : 'escaped';
   return { status, seconds: stats.seconds * rng.range(0.8, 1.2) };
 }
 
@@ -100,14 +107,16 @@ function shop(game: Game): void {
   }
   // Baits: a few packs when they are cheap compared with the purse.
   for (const bait of BAITS.filter((b) => b.price > 0)) {
-    if ((state.baits[bait.id] ?? 0) < 4 && game.checkBuy(bait.id).ok && bait.price < state.coins * 0.05) game.buy(bait.id);
+    if ((state.baits[bait.id] ?? 0) < 4 && game.checkBuy(bait.id).ok && bait.price < state.coins * 0.05)
+      game.buy(bait.id);
   }
 }
 
 /** Crafting happens before selling: rare fish become glowing baits, an epic becomes a lure. */
 function craftBaits(game: Game): void {
   const state = game.state;
-  if ((state.baits.leurre ?? 0) === 0 && game.currentStory()?.id === 's18' && game.canCraft('leurre')) game.craft('leurre');
+  if ((state.baits.leurre ?? 0) === 0 && game.currentStory()?.id === 's18' && game.canCraft('leurre'))
+    game.craft('leurre');
   for (const id of ['lumignon', 'strouille']) {
     if ((state.baits[id] ?? 0) < 4 && game.canCraft(id)) game.craft(id);
   }
@@ -124,8 +133,10 @@ function pickZone(game: Game, rng: Rng): ZoneId {
   const open = ZONES.filter((z) => game.zoneAccess(z.id).ok);
   const mission = game.currentStory();
   const obj = mission?.objective;
-  if (obj && 'zone' in obj && obj.zone && game.zoneAccess(obj.zone).ok && obj.kind === 'catch') return obj.zone;
-  if (mission?.id === 's18' && game.zoneAccess('fosse').ok && (game.state.baits.leurre ?? 0) > 0) return 'fosse';
+  if (obj && 'zone' in obj && obj.zone && game.zoneAccess(obj.zone).ok && obj.kind === 'catch')
+    return obj.zone;
+  if (mission?.id === 's18' && game.zoneAccess('fosse').ok && (game.state.baits.leurre ?? 0) > 0)
+    return 'fosse';
   // A player reads the weather: zones where a missing rare species can bite right now come first.
   const scored = open.map((z, i) => {
     let score = 0;
@@ -148,7 +159,8 @@ function pickBait(game: Game, rng: Rng): void {
   }
   const missing = missingIn(game, state.zone);
   const wanted = new Map<string, number>();
-  for (const s of missing) for (const b of s.baits) if (b !== 'leurre') wanted.set(b, (wanted.get(b) ?? 0) + 1);
+  for (const s of missing)
+    for (const b of s.baits) if (b !== 'leurre') wanted.set(b, (wanted.get(b) ?? 0) + 1);
   const owned = BAITS.filter((b) => !b.special && (b.infinite || (state.baits[b.id] ?? 0) > 0));
   const best = owned
     .map((b) => ({ id: b.id, score: (wanted.get(b.id) ?? 0) * 2 + b.luck * 3 + rng.next() }))
@@ -280,9 +292,14 @@ for (let i = 0; i < RUNS; i++) {
 }
 if (process.stdout.isTTY) process.stdout.write('\r');
 
-console.log(`\nRESSAC — simulation d'équilibrage : ${RUNS} carrières (graine ${SEED}, sessions de ~${SESSION_MINUTES} min, plafond ${MAX_HOURS} h)\n`);
+console.log(
+  `\nRESSAC — simulation d'équilibrage : ${RUNS} carrières (graine ${SEED}, sessions de ~${SESSION_MINUTES} min, plafond ${MAX_HOURS} h)\n`,
+);
 const rows = MILESTONES.map((m) => {
-  const values = results.map((r) => r.times[m.id]).filter((v): v is number => v !== undefined).sort((a, b) => a - b);
+  const values = results
+    .map((r) => r.times[m.id])
+    .filter((v): v is number => v !== undefined)
+    .sort((a, b) => a - b);
   const mean = values.length ? values.reduce((s, v) => s + v, 0) / values.length : undefined;
   return {
     Palier: m.label,
@@ -298,7 +315,11 @@ const missingCount = new Map<string, number>();
 for (const r of results) for (const id of r.missing) missingCount.set(id, (missingCount.get(id) ?? 0) + 1);
 if (missingCount.size > 0) {
   const top = [...missingCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  console.log(`Espèces les plus souvent manquantes en fin de simulation : ${top.map(([id, n]) => `${id} (${Math.round((n / RUNS) * 100)} %)`).join(', ')}`);
+  console.log(
+    `Espèces les plus souvent manquantes en fin de simulation : ${top.map(([id, n]) => `${id} (${Math.round((n / RUNS) * 100)} %)`).join(', ')}`,
+  );
 }
 const avgCatches = results.reduce((s, r) => s + r.catches, 0) / RUNS;
-console.log(`Prises moyennes par carrière : ${Math.round(avgCatches)} · durée de calcul : ${((Date.now() - started) / 1000).toFixed(1)} s`);
+console.log(
+  `Prises moyennes par carrière : ${Math.round(avgCatches)} · durée de calcul : ${((Date.now() - started) / 1000).toFixed(1)} s`,
+);

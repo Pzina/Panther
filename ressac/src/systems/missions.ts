@@ -9,7 +9,15 @@ import { collectionCount } from './progression';
 
 /** Things that happen in the game and can advance missions. */
 export type GameAction =
-  | { type: 'catch'; fish: CaughtFish; rarity: Rarity; zone: ZoneId; phase: DayPhase; weather: Weather; variant: VariantId }
+  | {
+      type: 'catch';
+      fish: CaughtFish;
+      rarity: Rarity;
+      zone: ZoneId;
+      phase: DayPhase;
+      weather: Weather;
+      variant: VariantId;
+    }
   | { type: 'sell'; count: number; coins: number }
   | { type: 'release' }
   | { type: 'perfect' }
@@ -163,5 +171,7 @@ export function dailyDelta(mission: DailyMission, action: GameAction): number {
 export function dailyText(mission: DailyMission): string {
   const tpl = DAILY_TEMPLATES.find((d) => d.id === mission.templateId);
   const text = tpl?.text ?? 'Attraper {n} poissons';
-  return text.replace('{n}', String(mission.target)).replace('{zone}', mission.zone ? getZone(mission.zone).name : '');
+  return text
+    .replace('{n}', String(mission.target))
+    .replace('{zone}', mission.zone ? getZone(mission.zone).name : '');
 }

@@ -30,7 +30,8 @@ function mapSvg(selected: ZoneId): string {
   const W = 100;
   const H = 100;
   let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" class="map-svg" aria-hidden="true">`;
-  out += '<defs><pattern id="mw" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 3q2-2 4 0t4 0" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="0.4"/></pattern></defs>';
+  out +=
+    '<defs><pattern id="mw" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 3q2-2 4 0t4 0" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="0.4"/></pattern></defs>';
   out += `<rect width="${W}" height="${H}" fill="#5fb3c9"/><rect width="${W}" height="${H}" fill="url(#mw)"/>`;
   // Main island with the port.
   out += `<path d="${islandPath(36, 56, 13, 1)}" fill="#e8d9a8" stroke="#1d3344" stroke-width="0.6"/><path d="${islandPath(36, 56, 9, 1)}" fill="#8fae7a"/>`;
@@ -39,7 +40,8 @@ function mapSvg(selected: ZoneId): string {
   out += `<path d="${islandPath(30, 24, 10, 2)}" fill="#e8d9a8" stroke="#1d3344" stroke-width="0.5"/><path d="${islandPath(30, 24, 7, 2)}" fill="#7a8a5a"/>`;
   out += '<path d="M24 30q6-6 10-2t8-4" fill="none" stroke="#6fa8b5" stroke-width="1.4"/>';
   // Deep areas.
-  out += '<ellipse cx="60" cy="86" rx="13" ry="7" fill="#14365f" opacity="0.85"/><ellipse cx="60" cy="86" rx="7" ry="3.5" fill="#05081a"/>';
+  out +=
+    '<ellipse cx="60" cy="86" rx="13" ry="7" fill="#14365f" opacity="0.85"/><ellipse cx="60" cy="86" rx="7" ry="3.5" fill="#05081a"/>';
   out += '<ellipse cx="84" cy="20" rx="13" ry="11" fill="#3a7ab5" opacity="0.5"/>';
   // Route from the port to the selected zone.
   const port = { x: 42, y: 64 };
@@ -49,10 +51,13 @@ function mapSvg(selected: ZoneId): string {
     const open = game.zoneAccess(zone.id).ok;
     const known = game.state.unlockedZones.includes(zone.id);
     out += `<circle cx="${zone.map.x}" cy="${zone.map.y}" r="${zone.id === selected ? 4.4 : 3.4}" fill="${open ? hex(zone.palette.accent) : known ? '#c9c9c9' : '#7a8691'}" stroke="#1d3344" stroke-width="${zone.id === selected ? 0.9 : 0.6}"/>`;
-    if (!open) out += `<path d="M${zone.map.x - 1.2} ${zone.map.y - 0.2}h2.4v2h-2.4zM${zone.map.x - 0.8} ${zone.map.y - 0.2}v-0.8a0.8 0.8 0 011.6 0v0.8" fill="none" stroke="#1d3344" stroke-width="0.4"/>`;
+    if (!open)
+      out += `<path d="M${zone.map.x - 1.2} ${zone.map.y - 0.2}h2.4v2h-2.4zM${zone.map.x - 0.8} ${zone.map.y - 0.2}v-0.8a0.8 0.8 0 011.6 0v0.8" fill="none" stroke="#1d3344" stroke-width="0.4"/>`;
   }
-  out += '<text x="50" y="97" text-anchor="middle" font-size="3" fill="#1d3344" font-family="serif" font-style="italic">Archipel de Ressac</text>';
-  out += '<g transform="translate(90 90)"><circle r="5" fill="#fbf5e6" stroke="#1d3344" stroke-width="0.4"/><path d="M0 -4l1.2 4h-2.4z" fill="#c94a3a"/><path d="M0 4l1.2 -4h-2.4z" fill="#1d3344"/></g>';
+  out +=
+    '<text x="50" y="97" text-anchor="middle" font-size="3" fill="#1d3344" font-family="serif" font-style="italic">Archipel de Ressac</text>';
+  out +=
+    '<g transform="translate(90 90)"><circle r="5" fill="#fbf5e6" stroke="#1d3344" stroke-width="0.4"/><path d="M0 -4l1.2 4h-2.4z" fill="#c94a3a"/><path d="M0 4l1.2 -4h-2.4z" fill="#1d3344"/></g>';
   return `${out}</svg>`;
 }
 
@@ -75,7 +80,12 @@ export function mapScreen(): Screen {
     return h(
       'div',
       { class: `card zone-card${access.ok ? '' : ' is-locked'}`, 'data-zone': zone.id },
-      h('div', { class: 'card-title' }, h('b', null, nameOf(zone)), zone.id === game.state.zone ? h('span', { class: 'pill' }, icon('pin'), t('map.here')) : null),
+      h(
+        'div',
+        { class: 'card-title' },
+        h('b', null, nameOf(zone)),
+        zone.id === game.state.zone ? h('span', { class: 'pill' }, icon('pin'), t('map.here')) : null,
+      ),
       h('p', null, descOf(zone)),
       h('p', { class: 'row-sub' }, icon('info'), zone.gimmickText),
       h(
@@ -84,15 +94,24 @@ export function mapScreen(): Screen {
         h('span', { class: 'chip' }, icon(WEATHER_ICONS[weather]), t(`weather.${weather}`)),
         h('span', { class: 'chip' }, icon(PHASE_ICONS[phase]), t(`phase.${phase}`)),
         h('span', { class: 'chip' }, icon('clock'), t('map.travel', { n: game.travelMinutes(zone.id) })),
-        h('span', { class: 'chip' }, icon('book'), t('map.species', { n: collectionCount(game.state, zone.id), max: collectionTotal(zone.id) })),
+        h(
+          'span',
+          { class: 'chip' },
+          icon('book'),
+          t('map.species', { n: collectionCount(game.state, zone.id), max: collectionTotal(zone.id) }),
+        ),
       ),
       access.ok
-        ? button(t('map.go'), () => {
-            if (game.travel(zone.id)) {
-              app.save();
-              void app.ui.setMode('fishing');
-            }
-          }, { kind: 'primary', icon: 'hook', id: `go-${zone.id}`, cls: 'btn-big' })
+        ? button(
+            t('map.go'),
+            () => {
+              if (game.travel(zone.id)) {
+                app.save();
+                void app.ui.setMode('fishing');
+              }
+            },
+            { kind: 'primary', icon: 'hook', id: `go-${zone.id}`, cls: 'btn-big' },
+          )
         : h('p', { class: 'lock-line' }, icon('lock'), h('span', null, `${t('map.locked')} — ${lockText}`)),
     );
   };
@@ -122,7 +141,12 @@ export function mapScreen(): Screen {
       );
     }
     body.append(
-      h('div', { class: 'npc-line' }, h('div', { class: 'npc-portrait', html: portraitSvg('nell') }), h('p', null, t('map.nell'))),
+      h(
+        'div',
+        { class: 'npc-line' },
+        h('div', { class: 'npc-portrait', html: portraitSvg('nell') }),
+        h('p', null, t('map.nell')),
+      ),
       map,
       detail(getZone(selected)),
     );

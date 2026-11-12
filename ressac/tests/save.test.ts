@@ -61,7 +61,11 @@ describe('save', () => {
       unlockedZones: ['etang', 'nowhere'],
       owned: ['rod-bambou', 'rod-laser'],
       equipment: { rod: 'rod-laser', reel: 'reel-bois' },
-      creel: [{ speciesId: 'gobie', size: 10, weight: 0.02, value: 5, uid: 4 }, { speciesId: 'dragon-rouge' }, 12],
+      creel: [
+        { speciesId: 'gobie', size: 10, weight: 0.02, value: 5, uid: 4 },
+        { speciesId: 'dragon-rouge' },
+        12,
+      ],
       dex: { gobie: { count: 2, maxSize: 11, maxWeight: 0.03, variants: ['golden', 'plaid'] }, licorne: {} },
       settings: { music: 4, textScale: 'big' },
     });

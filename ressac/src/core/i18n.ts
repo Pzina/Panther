@@ -44,5 +44,7 @@ export function loc(id: string, field: string, fallback: string): string {
 }
 
 export function formatNumber(n: number): string {
-  return Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ');
+  return Math.round(n)
+    .toLocaleString('fr-FR')
+    .replace(/[\u202f\u00a0]/g, ' ');
 }

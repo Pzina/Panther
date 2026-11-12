@@ -120,3 +120,12 @@ describe('economy', () => {
     expect(game.state.aquarium).toHaveLength(BALANCE.aquariumSlots);
   });
 });
+
+describe('store', () => {
+  it('ships an empty in-app purchase interface', async () => {
+    const { noStore } = await import('../src/core/store');
+    expect(noStore.available).toBe(false);
+    expect(await noStore.products()).toEqual([]);
+    expect((await noStore.purchase('anything')).ok).toBe(false);
+  });
+});

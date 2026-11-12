@@ -1,7 +1,17 @@
 import { app } from '../../app';
 import { portraitSvg } from '../../art/portraits';
 import { formatNumber, t } from '../../core/i18n';
-import { BAITS, getBait, getBoat, getHook, getItem, getLine, getReel, getRod, itemsOf } from '../../data/equipment';
+import {
+  BAITS,
+  getBait,
+  getBoat,
+  getHook,
+  getItem,
+  getLine,
+  getReel,
+  getRod,
+  itemsOf,
+} from '../../data/equipment';
 import { getStoryMission } from '../../data/missions';
 import type { Bait, CosmeticSlot, Item, ItemCategory } from '../../data/types';
 import { craftIngredients, lockReason } from '../../systems/economy';
@@ -56,12 +66,24 @@ function statsOf(item: Item): Stat[] {
     }
     case 'line': {
       const cur = getLine(eq.line);
-      return [{ label: t('stat.strength'), value: item.strength, current: cur.strength, format: (v) => `×${v.toFixed(2)}` }];
+      return [
+        {
+          label: t('stat.strength'),
+          value: item.strength,
+          current: cur.strength,
+          format: (v) => `×${v.toFixed(2)}`,
+        },
+      ];
     }
     case 'hook': {
       const cur = getHook(eq.hook);
       return [
-        { label: t('stat.window'), value: item.window, current: cur.window, format: (v) => `+${v.toFixed(2)} s` },
+        {
+          label: t('stat.window'),
+          value: item.window,
+          current: cur.window,
+          format: (v) => `+${v.toFixed(2)} s`,
+        },
         { label: t('stat.hold'), value: item.hold, current: cur.hold, format: (v) => `×${v.toFixed(2)}` },
       ];
     }
@@ -74,7 +96,13 @@ function statsOf(item: Item): Stat[] {
     }
     case 'bait':
       return [
-        { label: t('stat.bite'), value: item.speed, current: 1, format: (v) => (v < 1 ? `-${Math.round((1 - v) * 100)} %` : '='), inverse: true },
+        {
+          label: t('stat.bite'),
+          value: item.speed,
+          current: 1,
+          format: (v) => (v < 1 ? `-${Math.round((1 - v) * 100)} %` : '='),
+          inverse: true,
+        },
         { label: t('stat.luck'), value: item.luck, current: 0, format: plusPct },
       ];
     default:
@@ -95,7 +123,9 @@ function statList(item: Item, compare: boolean): HTMLElement {
         { class: compare ? (better ? 'is-better' : worse ? 'is-worse' : '') : '' },
         h('span', null, s.label),
         h('b', null, s.format(s.value)),
-        compare && (better || worse) ? h('i', { 'aria-label': better ? 'mieux' : 'moins bien' }, icon(better ? 'level' : 'minus')) : null,
+        compare && (better || worse)
+          ? h('i', { 'aria-label': better ? 'mieux' : 'moins bien' }, icon(better ? 'level' : 'minus'))
+          : null,
       );
     }),
   );
@@ -146,11 +176,15 @@ function itemRow(item: Item, render: () => void): HTMLElement {
   if (owned) {
     action = equipped(item)
       ? h('span', { class: 'pill pill-good' }, icon('check'), t('shop.equipped'))
-      : button(t('shop.equip'), () => {
-          game.equip(item.id);
-          app.save();
-          render();
-        }, { small: true });
+      : button(
+          t('shop.equip'),
+          () => {
+            game.equip(item.id);
+            app.save();
+            render();
+          },
+          { small: true },
+        );
   } else if (lock) {
     action = h('span', { class: 'pill' }, icon('lock'), lock);
   } else {
@@ -168,7 +202,9 @@ function itemRow(item: Item, render: () => void): HTMLElement {
     item.category === 'cosmetic'
       ? h('span', {
           class: 'swatch',
-          style: { background: `linear-gradient(135deg, #${item.color.toString(16).padStart(6, '0')} 55%, #${item.color2.toString(16).padStart(6, '0')} 55%)` },
+          style: {
+            background: `linear-gradient(135deg, #${item.color.toString(16).padStart(6, '0')} 55%, #${item.color2.toString(16).padStart(6, '0')} 55%)`,
+          },
         })
       : null;
   return h(
@@ -180,7 +216,15 @@ function itemRow(item: Item, render: () => void): HTMLElement {
       { class: 'row-main' },
       h('b', null, nameOf(item)),
       h('span', { class: 'row-sub' }, descOf(item)),
-      item.category === 'bait' ? h('span', { class: 'row-sub' }, t('shop.pack', { n: (item as Bait).pack }), ' · ', t('shop.stock', { n: game.state.baits[item.id] ?? 0 })) : null,
+      item.category === 'bait'
+        ? h(
+            'span',
+            { class: 'row-sub' },
+            t('shop.pack', { n: (item as Bait).pack }),
+            ' · ',
+            t('shop.stock', { n: game.state.baits[item.id] ?? 0 }),
+          )
+        : null,
       statList(item, !owned && item.category !== 'bait'),
     ),
     h('div', { class: 'row-actions' }, action),
@@ -201,7 +245,13 @@ function craftRow(bait: Bait, render: () => void): HTMLElement | null {
       { class: 'row-main' },
       h('b', null, nameOf(bait)),
       h('span', { class: 'row-sub' }, descOf(bait)),
-      h('span', { class: 'row-sub' }, t('shop.recipe', { n: bait.craft!.count, rarity: t(`rarity.${bait.craft!.rarity}`) }), ' → ', t('shop.pack', { n: bait.pack })),
+      h(
+        'span',
+        { class: 'row-sub' },
+        t('shop.recipe', { n: bait.craft!.count, rarity: t(`rarity.${bait.craft!.rarity}`) }),
+        ' → ',
+        t('shop.pack', { n: bait.pack }),
+      ),
       h('span', { class: 'row-sub' }, t('shop.stock', { n: game.state.baits[bait.id] ?? 0 })),
       !ingredients ? h('span', { class: 'row-sub muted' }, t('shop.recipe.missing')) : null,
       statList(bait, false),
@@ -209,19 +259,27 @@ function craftRow(bait: Bait, render: () => void): HTMLElement | null {
     h(
       'div',
       { class: 'row-actions' },
-      button(t('shop.craft'), () => {
-        if (game.craft(bait.id)) {
-          app.audio.sfx('coins');
-          app.ui.toast(t('shop.crafted', { n: bait.pack, name: nameOf(bait) }), 'good', 'bait');
-          app.save();
-        }
-        render();
-      }, { small: true, disabled: !ok, kind: 'primary' }),
+      button(
+        t('shop.craft'),
+        () => {
+          if (game.craft(bait.id)) {
+            app.audio.sfx('coins');
+            app.ui.toast(t('shop.crafted', { n: bait.pack, name: nameOf(bait) }), 'good', 'bait');
+            app.save();
+          }
+          render();
+        },
+        { small: true, disabled: !ok, kind: 'primary' },
+      ),
       (game.state.baits[bait.id] ?? 0) > 0 && !equipped(bait)
-        ? button(t('shop.equip'), () => {
-            game.equip(bait.id);
-            render();
-          }, { small: true })
+        ? button(
+            t('shop.equip'),
+            () => {
+              game.equip(bait.id);
+              render();
+            },
+            { small: true },
+          )
         : null,
     ),
   );
@@ -230,7 +288,9 @@ function craftRow(bait: Bait, render: () => void): HTMLElement | null {
 function sellTab(body: HTMLElement, render: () => void): void {
   const game = app.game;
   const flags = game.state.flags;
-  const creel = [...game.state.creel].sort((a, b) => Number(a.locked) - Number(b.locked) || b.value - a.value);
+  const creel = [...game.state.creel].sort(
+    (a, b) => Number(a.locked) - Number(b.locked) || b.value - a.value,
+  );
   if (!flags.tutorialDone && flags.tutorialStep === 5 && creel.length === 0) advanceTutorialToBait();
   if (creel.length === 0) {
     body.append(emptyState('net', t('shop.empty')));
@@ -254,14 +314,23 @@ function sellTab(body: HTMLElement, render: () => void): void {
   });
   all.append(coinTag(total));
   body.append(
-    h('div', { class: 'sell-head' }, all, creel.some((f) => f.locked) ? h('p', { class: 'muted' }, t('shop.lockedHint')) : null),
+    h(
+      'div',
+      { class: 'sell-head' },
+      all,
+      creel.some((f) => f.locked) ? h('p', { class: 'muted' }, t('shop.lockedHint')) : null,
+    ),
     h(
       'div',
       { class: 'list' },
       ...creel.map((fish) =>
         fishRow(fish, [
           lockButton(fish, render),
-          button(t('shop.sell'), () => sold(game.sellFish(fish.uid)), { small: true, disabled: fish.locked, cls: 'sell-one' }),
+          button(t('shop.sell'), () => sold(game.sellFish(fish.uid)), {
+            small: true,
+            disabled: fish.locked,
+            cls: 'sell-one',
+          }),
         ]),
       ),
     ),
@@ -283,7 +352,11 @@ export function shopScreen(params: Record<string, unknown>): Screen {
   const game = app.game;
   let tab: Tab = (params.tab as Tab) ?? (game.state.creel.length > 0 ? 'sell' : 'bait');
   const shell = screenShell(t('shop.title'), 'shop', {
-    tabs: TABS.map((x) => ({ id: x.id, icon: x.icon, label: x.id === 'sell' ? t('shop.tab.sell') : t(`category.${x.id}`) })),
+    tabs: TABS.map((x) => ({
+      id: x.id,
+      icon: x.icon,
+      label: x.id === 'sell' ? t('shop.tab.sell') : t(`category.${x.id}`),
+    })),
     tab,
     onTab: (id) => {
       tab = id as Tab;
@@ -318,7 +391,13 @@ export function shopScreen(params: Record<string, unknown>): Screen {
       for (const slot of ['boatColor', 'bobber', 'outfit'] as CosmeticSlot[]) {
         body.append(h('h3', { class: 'section-title' }, t(`shop.slot.${slot}`)));
         body.append(
-          h('div', { class: 'list' }, ...itemsOf('cosmetic').filter((c) => c.category === 'cosmetic' && c.slot === slot).map((c) => itemRow(c, render))),
+          h(
+            'div',
+            { class: 'list' },
+            ...itemsOf('cosmetic')
+              .filter((c) => c.category === 'cosmetic' && c.slot === slot)
+              .map((c) => itemRow(c, render)),
+          ),
         );
       }
     } else {

@@ -17,7 +17,8 @@ import { showCatchCard } from '../ui/screens/catchCard';
 import { BaseScene } from './BaseScene';
 import { ensureFishTexture } from './PreloadScene';
 
-export type FishingState = 'idle' | 'charging' | 'casting' | 'waiting' | 'bite' | 'fight' | 'landing' | 'result';
+export type FishingState =
+  'idle' | 'charging' | 'casting' | 'waiting' | 'bite' | 'fight' | 'landing' | 'result';
 
 interface Shadow {
   x: number;
@@ -147,7 +148,14 @@ export class FishingScene extends BaseScene {
     this.fishSprite = this.add.image(0, 0, '__DEFAULT').setDepth(40).setVisible(false);
     this.glowG = this.add.graphics().setDepth(64);
     this.bang = this.add
-      .text(0, 0, '!', { fontFamily: 'system-ui, sans-serif', fontSize: '54px', fontStyle: '900', color: '#ffe36a', stroke: '#1d3344', strokeThickness: 8 })
+      .text(0, 0, '!', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '54px',
+        fontStyle: '900',
+        color: '#ffe36a',
+        stroke: '#1d3344',
+        strokeThickness: 8,
+      })
       .setOrigin(0.5, 1)
       .setDepth(70)
       .setVisible(false)
@@ -222,7 +230,9 @@ export class FishingScene extends BaseScene {
         this.plan = null;
         this.model = null;
         app.ui.busy = false;
-        this.hud.setPrompt(game.creelFull() ? 'Vivier plein — vous pouvez encore relâcher' : 'Maintenez pour lancer');
+        this.hud.setPrompt(
+          game.creelFull() ? 'Vivier plein — vous pouvez encore relâcher' : 'Maintenez pour lancer',
+        );
         app.ui.flush();
         break;
       case 'charging':
@@ -351,7 +361,11 @@ export class FishingScene extends BaseScene {
       app.ui.toast('Eau dormante : les poissons accourent.', 'good', 'target');
     }
     const first = this.tutorial && game.state.stats.catches === 0;
-    this.plan = game.planBite(this.depth, this.perfect, { luck, delayMult, force: first ? 'gobie' : undefined });
+    this.plan = game.planBite(this.depth, this.perfect, {
+      luck,
+      delayMult,
+      force: first ? 'gobie' : undefined,
+    });
     if (first) {
       this.plan.delay = 2.4;
       this.plan.window = 1;
@@ -371,7 +385,11 @@ export class FishingScene extends BaseScene {
 
   private reelIn(): void {
     const tooEarly = this.t < this.nibbleUntil || this.biteAt - this.stateTime < 0.35;
-    app.ui.toast(tooEarly ? 'Trop tôt ! Le poisson a filé.' : 'Ligne remontée.', tooEarly ? 'warn' : 'info', 'hook');
+    app.ui.toast(
+      tooEarly ? 'Trop tôt ! Le poisson a filé.' : 'Ligne remontée.',
+      tooEarly ? 'warn' : 'info',
+      'hook',
+    );
     this.setState('idle');
   }
 
@@ -468,7 +486,9 @@ export class FishingScene extends BaseScene {
         ease: 'Back.easeOut',
       });
     }
-    await new Promise<void>((resolve) => this.time.delayedCall(game.state.settings.reducedMotion ? 220 : 720, resolve));
+    await new Promise<void>((resolve) =>
+      this.time.delayedCall(game.state.settings.reducedMotion ? 220 : 720, resolve),
+    );
     if (this.state !== 'landing') return;
 
     const result = game.completeCatch(plan.fish);
@@ -519,7 +539,15 @@ export class FishingScene extends BaseScene {
     for (let i = 0; i < count; i++) {
       const a = this.fx.range(0, Math.PI * 2);
       const v = this.fx.range(40, 170);
-      this.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, life: this.fx.range(0.5, 1), color, size: this.fx.range(2, 4) });
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v - 40,
+        life: this.fx.range(0.5, 1),
+        color,
+        size: this.fx.range(2, 4),
+      });
     }
   }
 
@@ -663,7 +691,8 @@ export class FishingScene extends BaseScene {
         this.splash(this.fishPos.x, this.fishPos.y, 12, 1);
       }
     } else if (model.surge > 0) this.hud.setHint('Il plonge : laissez filer !');
-    else if (model.flips === this.lastFlips && this.stateTime > 1 && !this.hud.hintLocked) this.hud.setHint(null);
+    else if (model.flips === this.lastFlips && this.stateTime > 1 && !this.hud.hintLocked)
+      this.hud.setHint(null);
 
     // Darkness: the gauge is only readable in flashes.
     const dim = this.zone.gimmick === 'darkness' && this.t % 1.7 > 0.6 && !game.state.settings.assist;
@@ -692,7 +721,11 @@ export class FishingScene extends BaseScene {
         const sy = this.backdrop.waterY(s.d, this.nearY);
         s.x += (this.bobber.x - s.x) * Math.min(1, dt * 2.4);
         const ny = sy + (ty - sy) * Math.min(1, dt * 2.4);
-        s.d = Phaser.Math.Clamp(Math.pow((ny - this.nearY) / (this.backdrop.horizonY + 26 - this.nearY), 1 / 0.85), 0, 1);
+        s.d = Phaser.Math.Clamp(
+          Math.pow((ny - this.nearY) / (this.backdrop.horizonY + 26 - this.nearY), 1 / 0.85),
+          0,
+          1,
+        );
         return;
       }
       s.x += s.dir * s.speed * dt;
@@ -755,8 +788,10 @@ export class FishingScene extends BaseScene {
     g.fillEllipse(ax, ay + 18, 78, 62);
     if (outfit.style === 'striped' || outfit.style === 'plaid') {
       g.lineStyle(4, outfit.color2, 1);
-      for (let i = -2; i <= 2; i++) g.lineBetween(ax - 34 + Math.abs(i) * 4, ay + 14 + i * 9, ax + 34 - Math.abs(i) * 4, ay + 14 + i * 9);
-      if (outfit.style === 'plaid') for (let i = -1; i <= 1; i++) g.lineBetween(ax + i * 18, ay - 8, ax + i * 18, ay + 44);
+      for (let i = -2; i <= 2; i++)
+        g.lineBetween(ax - 34 + Math.abs(i) * 4, ay + 14 + i * 9, ax + 34 - Math.abs(i) * 4, ay + 14 + i * 9);
+      if (outfit.style === 'plaid')
+        for (let i = -1; i <= 1; i++) g.lineBetween(ax + i * 18, ay - 8, ax + i * 18, ay + 44);
     }
     g.lineStyle(2.5, 0x1d3344, 1);
     g.strokeEllipse(ax, ay + 18, 78, 62);
@@ -793,7 +828,11 @@ export class FishingScene extends BaseScene {
         // In the dark, fish are betrayed by their own lights.
         for (let i = 0; i < 4; i++) {
           glow.fillStyle(this.zone.palette.accent, 0.5 - i * 0.09);
-          glow.fillCircle(s.x - s.dir * i * 7 * scale, y + (i % 2 === 0 ? wiggle : -wiggle) * 0.4, 2.2 * scale);
+          glow.fillCircle(
+            s.x - s.dir * i * 7 * scale,
+            y + (i % 2 === 0 ? wiggle : -wiggle) * 0.4,
+            2.2 * scale,
+          );
         }
         continue;
       }
@@ -894,9 +933,19 @@ export class FishingScene extends BaseScene {
       const size = 0.7 + this.model.params.difficulty * 0.9;
       const fy = this.fishPos.y - jump * 60;
       const target = jump > 0 ? b : u;
-      target.fillStyle(jump > 0 ? mixNum(this.zone.palette.waterBottom, 0x000000, 0.2) : 0x0a2030, jump > 0 ? 0.95 : 0.42);
+      target.fillStyle(
+        jump > 0 ? mixNum(this.zone.palette.waterBottom, 0x000000, 0.2) : 0x0a2030,
+        jump > 0 ? 0.95 : 0.42,
+      );
       target.fillEllipse(this.fishPos.x, fy, 40 * size, 14 * size);
-      target.fillTriangle(this.fishPos.x + 18 * size, fy, this.fishPos.x + 34 * size, fy - 9 * size, this.fishPos.x + 34 * size, fy + 9 * size);
+      target.fillTriangle(
+        this.fishPos.x + 18 * size,
+        fy,
+        this.fishPos.x + 34 * size,
+        fy - 9 * size,
+        this.fishPos.x + 34 * size,
+        fy + 9 * size,
+      );
       if (fosse) {
         glow.fillStyle(this.zone.palette.accent, 0.8);
         for (let i = -2; i <= 2; i++) glow.fillCircle(this.fishPos.x + i * 7 * size, fy, 2.2);
@@ -916,7 +965,8 @@ export class FishingScene extends BaseScene {
       line.draw(b, 14);
       const cosmetic = getCosmetic(game.state.cosmetics.bobber);
       const dip = Phaser.Math.Clamp(this.bobber.dip, -0.2, 1);
-      if (dip < 0.9) drawBobber(b, this.bobber.x, this.bobber.y, cosmetic, Math.max(0, dip), this.bobber.scale);
+      if (dip < 0.9)
+        drawBobber(b, this.bobber.x, this.bobber.y, cosmetic, Math.max(0, dip), this.bobber.scale);
       if (night || cosmetic.style === 'glow') {
         glow.fillStyle(cosmetic.style === 'glow' ? cosmetic.color : 0xffe9a8, 0.3);
         glow.fillCircle(this.bobber.x, this.bobber.y - 4, 16 * this.bobber.scale);

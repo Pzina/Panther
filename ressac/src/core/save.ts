@@ -395,7 +395,10 @@ export function createIndexedDbMirror(): MirrorLike | undefined {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
-  const run = async <T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
+  const run = async <T>(
+    mode: IDBTransactionMode,
+    fn: (store: IDBObjectStore) => IDBRequest<T>,
+  ): Promise<T> => {
     const db = await open();
     return new Promise<T>((resolve, reject) => {
       const tx = db.transaction('kv', mode);

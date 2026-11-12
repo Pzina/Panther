@@ -95,19 +95,36 @@ function bindGame(game: Game): void {
   ev.on('storyComplete', ({ mission }) => {
     ui.enqueue(async () => {
       await ui.dialogue(mission.outro);
-      await ui.notice(t('notify.mission.done'), h('div', null, h('p', null, mission.title), rewardLine(mission.reward)), t('common.continue'), 'check');
+      await ui.notice(
+        t('notify.mission.done'),
+        h('div', null, h('p', null, mission.title), rewardLine(mission.reward)),
+        t('common.continue'),
+        'check',
+      );
       app.save();
     });
     ui.enqueue(async () => showStoryIntro());
   });
   ev.on('zoneUnlocked', ({ zone }) => {
-    ui.enqueue(() => ui.notice(t('notify.zone.title'), t('notify.zone.text', { name: getZone(zone).name }), t('common.ok'), 'map'));
+    ui.enqueue(() =>
+      ui.notice(
+        t('notify.zone.title'),
+        t('notify.zone.text', { name: getZone(zone).name }),
+        t('common.ok'),
+        'map',
+      ),
+    );
   });
   ev.on('journalPage', ({ page }) => {
     const p = JOURNAL_PAGES[page - 1];
     if (!p) return;
     ui.enqueue(() =>
-      ui.notice(t('notify.journal.title', { n: page }), h('div', { class: 'journal-page' }, h('h4', null, p.title), h('p', null, p.text)), t('common.continue'), 'book'),
+      ui.notice(
+        t('notify.journal.title', { n: page }),
+        h('div', { class: 'journal-page' }, h('h4', null, p.title), h('p', null, p.text)),
+        t('common.continue'),
+        'book',
+      ),
     );
   });
   ev.on('ending', () => {
@@ -151,11 +168,24 @@ function welcome(): void {
   welcomedThisSession = true;
   const offline = game.offlineGains();
   if (offline) {
-    const duration = offline.hours >= 1 ? t('offline.hours', { n: Math.floor(offline.hours) }) : t('offline.minutes', { n: Math.round(offline.hours * 60) });
+    const duration =
+      offline.hours >= 1
+        ? t('offline.hours', { n: Math.floor(offline.hours) })
+        : t('offline.minutes', { n: Math.round(offline.hours * 60) });
     ui.enqueue(async () => {
       game.collectOffline();
       app.audio.sfx('coins');
-      await ui.notice(t('offline.title'), h('div', null, h('p', null, t('offline.text', { hours: duration })), rewardLine({ coins: offline.coins })), t('common.ok'), 'net');
+      await ui.notice(
+        t('offline.title'),
+        h(
+          'div',
+          null,
+          h('p', null, t('offline.text', { hours: duration })),
+          rewardLine({ coins: offline.coins }),
+        ),
+        t('common.ok'),
+        'net',
+      );
       app.save();
     });
   } else {
@@ -166,7 +196,12 @@ function welcome(): void {
     ui.enqueue(async () => {
       game.claimLoginBonus();
       app.audio.sfx('coins');
-      await ui.notice(t('login.title'), h('div', null, h('p', null, t('login.text', { day: bonus.day })), rewardLine(bonus.reward)), t('login.claim'), 'gift');
+      await ui.notice(
+        t('login.title'),
+        h('div', null, h('p', null, t('login.text', { day: bonus.day })), rewardLine(bonus.reward)),
+        t('login.claim'),
+        'gift',
+      );
       app.save();
     });
   }
@@ -226,7 +261,8 @@ app.ui.registerHud('home', () => new HomeHud({ play, newGame: () => void newGame
 app.ui.registerHud('port', () => new PortHud());
 app.ui.registerHud('fishing', () => new FishingHud());
 registerScreens(app.ui);
-app.ui.holdNotifications = () => app.ui.mode === 'home' || (app.ui.mode === 'fishing' && !app.game.state.flags.tutorialDone);
+app.ui.holdNotifications = () =>
+  app.ui.mode === 'home' || (app.ui.mode === 'fishing' && !app.game.state.flags.tutorialDone);
 app.ui.onModeChange = (mode) => {
   document.body.dataset.mode = mode;
   if (mode !== 'home') {
@@ -255,17 +291,28 @@ async function handleCorruptedSave(): Promise<void> {
       'div',
       { class: 'dialog' },
       h('h2', null, t('home.corrupt.title')),
-      h('p', null, t('home.corrupt.text', { day: Math.floor(backup.clockMinutes / 1440) + 1, coins: formatNumber(backup.coins) })),
+      h(
+        'p',
+        null,
+        t('home.corrupt.text', {
+          day: Math.floor(backup.clockMinutes / 1440) + 1,
+          coins: formatNumber(backup.coins),
+        }),
+      ),
       h(
         'div',
         { class: 'dialog-actions' },
         button(t('home.corrupt.fresh'), () => close(), { kind: 'ghost', id: 'corrupt-fresh' }),
-        button(t('home.corrupt.restore'), () => {
-          app.loadState(backup);
-          saves.save(backup);
-          close();
-          ui.hud?.refresh();
-        }, { kind: 'primary', id: 'corrupt-restore' }),
+        button(
+          t('home.corrupt.restore'),
+          () => {
+            app.loadState(backup);
+            saves.save(backup);
+            close();
+            ui.hud?.refresh();
+          },
+          { kind: 'primary', id: 'corrupt-restore' },
+        ),
       ),
     );
     const close = ui.modal(content, { dismissible: false });
@@ -285,7 +332,11 @@ const splashStart = performance.now();
 function canvasSize(): { width: number; height: number; dpr: number } {
   const rect = root.getBoundingClientRect();
   const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
-  return { width: Math.max(1, Math.round(rect.width * dpr)), height: Math.max(1, Math.round(rect.height * dpr)), dpr };
+  return {
+    width: Math.max(1, Math.round(rect.width * dpr)),
+    height: Math.max(1, Math.round(rect.height * dpr)),
+    dpr,
+  };
 }
 
 const size = canvasSize();

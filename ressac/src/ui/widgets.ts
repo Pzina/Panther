@@ -28,15 +28,27 @@ export function rarityTag(rarity: Rarity): HTMLSpanElement {
   );
 }
 
-export function fishArt(species: Species, variant: VariantId = 'normal', known = true, cls = ''): HTMLDivElement {
+export function fishArt(
+  species: Species,
+  variant: VariantId = 'normal',
+  known = true,
+  cls = '',
+): HTMLDivElement {
   return h('div', {
     class: `fish-art ${known ? '' : 'is-unknown'} ${cls}`.trim(),
-    html: fishSvg(species.art, { key: species.id, variant, silhouette: !known, still: document.body.classList.contains('reduced-motion') }),
+    html: fishSvg(species.art, {
+      key: species.id,
+      variant,
+      silhouette: !known,
+      still: document.body.classList.contains('reduced-motion'),
+    }),
   });
 }
 
 export function formatSize(cm: number): string {
-  return t('common.cm', { n: cm >= 100 ? Math.round(cm) : cm.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) });
+  return t('common.cm', {
+    n: cm >= 100 ? Math.round(cm) : cm.toLocaleString('fr-FR', { maximumFractionDigits: 1 }),
+  });
 }
 
 export function formatWeight(kg: number): string {

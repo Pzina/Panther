@@ -16,7 +16,12 @@ export function fishRow(fish: CaughtFish, actions: HTMLElement[]): HTMLElement {
       'div',
       { class: 'row-main' },
       h('b', null, fishLabel(fish, species)),
-      h('span', { class: 'row-sub' }, rarityTag(species.rarity), ` ${formatSize(fish.size)} · ${formatWeight(fish.weight)}`),
+      h(
+        'span',
+        { class: 'row-sub' },
+        rarityTag(species.rarity),
+        ` ${formatSize(fish.size)} · ${formatWeight(fish.weight)}`,
+      ),
       coinTag(app.game.priceOf(fish)),
     ),
     h('div', { class: 'row-actions' }, ...actions),
@@ -24,10 +29,15 @@ export function fishRow(fish: CaughtFish, actions: HTMLElement[]): HTMLElement {
 }
 
 export function lockButton(fish: CaughtFish, after: () => void): HTMLButtonElement {
-  const btn = iconButton(fish.locked ? 'lock' : 'unlock', fish.locked ? t('creel.unlock') : t('creel.lock'), () => {
-    app.game.toggleLock(fish.uid);
-    after();
-  }, `lock-btn${fish.locked ? ' is-on' : ''}`);
+  const btn = iconButton(
+    fish.locked ? 'lock' : 'unlock',
+    fish.locked ? t('creel.unlock') : t('creel.lock'),
+    () => {
+      app.game.toggleLock(fish.uid);
+      after();
+    },
+    `lock-btn${fish.locked ? ' is-on' : ''}`,
+  );
   btn.setAttribute('aria-pressed', String(fish.locked));
   return btn;
 }

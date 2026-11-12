@@ -14,13 +14,42 @@ import { button, clear, h, icon, iconButton, progress } from './dom';
 import type { Hud } from './ui';
 import { coinTag, nameOf } from './widgets';
 
-function statusChips(zone = app.game.state.zone): HTMLElement[] {
+const SEASON_ICONS: Record<string, string> = {
+  spring: 'flower',
+  summer: 'sun',
+  autumn: 'leaf',
+  winter: 'snow',
+};
+
+function statusChips(zone = app.game.state.zone, compact = false): HTMLElement[] {
   const game = app.game;
   const phase = game.phase(zone);
   const weather = game.weather(zone);
+  const label = `${t(`phase.${phase}`)} · ${t(`weather.${weather}`)}`;
+  if (compact) {
+    return [
+      h(
+        'div',
+        { class: 'chip', title: label, 'aria-label': `${formatClock(game.state.clockMinutes)} · ${label}` },
+        icon(PHASE_ICONS[phase]),
+        h('span', null, formatClock(game.state.clockMinutes)),
+        icon(WEATHER_ICONS[weather]),
+      ),
+    ];
+  }
   return [
-    h('div', { class: 'chip', title: t(`phase.${phase}`) }, icon(PHASE_ICONS[phase]), h('span', null, formatClock(game.state.clockMinutes))),
-    h('div', { class: 'chip', title: t(`weather.${weather}`) }, icon(WEATHER_ICONS[weather]), h('span', { class: 'chip-text' }, t(`weather.${weather}`))),
+    h(
+      'div',
+      { class: 'chip', title: t(`phase.${phase}`) },
+      icon(PHASE_ICONS[phase]),
+      h('span', null, formatClock(game.state.clockMinutes)),
+    ),
+    h(
+      'div',
+      { class: 'chip', title: t(`weather.${weather}`), 'aria-label': t(`weather.${weather}`) },
+      icon(WEATHER_ICONS[weather]),
+      h('span', { class: 'chip-text' }, t(`weather.${weather}`)),
+    ),
   ];
 }
 
@@ -30,7 +59,11 @@ function tutorialBubble(text: string): HTMLElement {
     { class: 'tutorial', id: 'tutorial' },
     h('div', { class: 'tutorial-portrait', html: portraitSvg('herve') }),
     h('div', { class: 'tutorial-body' }, h('p', null, text)),
-    h('button', { class: 'tutorial-skip', type: 'button', id: 'tutorial-skip', onclick: () => endTutorial(true) }, t('hud.tutorial.skip')),
+    h(
+      'button',
+      { class: 'tutorial-skip', type: 'button', id: 'tutorial-skip', onclick: () => endTutorial(true) },
+      t('hud.tutorial.skip'),
+    ),
   );
 }
 
@@ -67,12 +100,20 @@ export class HomeHud implements Hud {
       h(
         'div',
         { class: 'home-title' },
-        h('h1', { class: 'logo', 'aria-label': GAME_NAME }, ...GAME_NAME.split('').map((c, i) => h('span', { style: { animationDelay: `${i * 0.12}s` } }, c))),
+        h(
+          'h1',
+          { class: 'logo', 'aria-label': GAME_NAME },
+          ...GAME_NAME.split('').map((c, i) => h('span', { style: { animationDelay: `${i * 0.12}s` } }, c)),
+        ),
         h('p', { class: 'tagline' }, t('home.tagline')),
       ),
     );
     if (!homeStarted) {
-      const tap = h('button', { class: 'tap-start', type: 'button', id: 'tap-start' }, h('span', null, t('home.tap')));
+      const tap = h(
+        'button',
+        { class: 'tap-start', type: 'button', id: 'tap-start' },
+        h('span', null, t('home.tap')),
+      );
       tap.addEventListener('click', () => {
         homeStarted = true;
         app.audio.unlock();
@@ -83,20 +124,32 @@ export class HomeHud implements Hud {
       return;
     }
     const summary = hasSave
-      ? t('home.save', { day: game.day, percent: Math.floor(collectionPercent(game.state)), coins: formatNumber(game.state.coins) })
+      ? t('home.save', {
+          day: game.day,
+          percent: Math.floor(collectionPercent(game.state)),
+          coins: formatNumber(game.state.coins),
+        })
       : t('home.nosave');
     this.el.append(
       h(
         'div',
         { class: 'home-menu' },
         h('p', { class: 'home-save', id: 'home-save' }, summary),
-        button(hasSave ? t('home.continue') : t('home.play'), this.actions.play, { kind: 'primary', icon: 'play', id: 'btn-play', cls: 'btn-big' }),
+        button(hasSave ? t('home.continue') : t('home.play'), this.actions.play, {
+          kind: 'primary',
+          icon: 'play',
+          id: 'btn-play',
+          cls: 'btn-big',
+        }),
         hasSave ? button(t('home.new'), this.actions.newGame, { icon: 'refresh', id: 'btn-new' }) : null,
         h(
           'div',
           { class: 'home-grid' },
           button(t('home.dex'), () => app.ui.open('dex'), { icon: 'book', id: 'btn-dex' }),
-          button(t('home.achievements'), () => app.ui.open('achievements'), { icon: 'trophy', id: 'btn-achievements' }),
+          button(t('home.achievements'), () => app.ui.open('achievements'), {
+            icon: 'trophy',
+            id: 'btn-achievements',
+          }),
           button(t('home.settings'), () => app.ui.open('settings'), { icon: 'gear', id: 'btn-settings' }),
           button(t('home.credits'), () => app.ui.open('credits'), { icon: 'info', id: 'btn-credits' }),
         ),
@@ -134,10 +187,22 @@ export class PortHud implements Hud {
         const c = game.challengeProgress(id);
         return !c.claimed && c.value >= c.target;
       });
-    const spot = (cls: string, iconName: string, label: string, onClick: () => void, badge = false, id?: string): HTMLElement =>
+    const spot = (
+      cls: string,
+      iconName: string,
+      label: string,
+      onClick: () => void,
+      badge = false,
+      id?: string,
+    ): HTMLElement =>
       h(
         'button',
-        { class: `spot ${cls}${tutorialStep === 5 && cls === 'spot-shop' ? ' is-highlight' : ''}`, type: 'button', onclick: onClick, id },
+        {
+          class: `spot ${cls}${tutorialStep === 5 && cls === 'spot-shop' ? ' is-highlight' : ''}`,
+          type: 'button',
+          onclick: onClick,
+          id,
+        },
         icon(iconName),
         h('span', null, label),
         badge ? h('i', { class: 'badge-dot' }) : null,
@@ -148,31 +213,82 @@ export class PortHud implements Hud {
         'div',
         { class: 'hud-top' },
         iconButton('home', t('port.home'), () => app.ui.back(), 'chip-btn'),
-        h('div', { class: 'chip' }, icon('calendar'), h('span', null, `${t('common.day', { n: game.day })} · ${t(`season.${game.season}`)} ${dayOfSeason(state.clockMinutes)}/${BALANCE.clock.daysPerSeason}`)),
-        ...statusChips('anse'),
+        h(
+          'div',
+          {
+            class: 'chip',
+            title: `${t(`season.${game.season}`)} ${dayOfSeason(state.clockMinutes)}/${BALANCE.clock.daysPerSeason}`,
+            'aria-label': `${t('common.day', { n: game.day })} · ${t(`season.${game.season}`)} ${dayOfSeason(state.clockMinutes)}/${BALANCE.clock.daysPerSeason}`,
+          },
+          icon(SEASON_ICONS[game.season]!),
+          h('span', null, t('common.day', { n: game.day })),
+          h('span', { class: 'chip-text' }, `· ${t(`season.${game.season}`)}`),
+        ),
+        ...statusChips('anse', true),
         h('div', { class: 'spacer' }),
         iconButton('gear', t('port.settings'), () => app.ui.open('settings'), 'chip-btn'),
       ),
       h(
         'div',
         { class: 'hud-second' },
-        h('div', { class: 'chip chip-level' }, h('b', null, t('common.level', { n: state.level })), progress(state.xp, xpToNext(state.level))),
-        h('div', { class: 'chip' }, icon('heart'), h('span', null, t('port.reputation', { n: Math.floor(state.reputation) }))),
-        game.stats().rested ? h('div', { class: 'chip chip-good' }, icon('bed'), h('span', null, t('port.rested'))) : null,
+        h(
+          'div',
+          { class: 'chip chip-level' },
+          h('b', null, t('common.level', { n: state.level })),
+          progress(state.xp, xpToNext(state.level)),
+        ),
+        h(
+          'div',
+          {
+            class: 'chip',
+            title: t('port.reputation', { n: Math.floor(state.reputation) }),
+            'aria-label': t('port.reputation', { n: Math.floor(state.reputation) }),
+          },
+          icon('heart'),
+          h('span', null, String(Math.floor(state.reputation))),
+        ),
+        game.stats().rested
+          ? h('div', { class: 'chip chip-good' }, icon('bed'), h('span', null, t('port.rested')))
+          : null,
         h('div', { class: 'spacer' }),
         h('div', { class: 'chip chip-coins', id: 'coins' }, coinTag(state.coins)),
       ),
       ...(tutorialStep >= 5 && tutorialStep <= 6 ? [tutorialBubble(TUTORIAL_STEPS[tutorialStep]!.text)] : []),
       spot('spot-cabin', 'home', t('port.cabin'), () => app.ui.open('cabin'), false, 'spot-cabin'),
-      spot('spot-shop', 'shop', t('port.shop'), () => app.ui.open('shop', { tab: tutorialStep === 5 ? 'sell' : undefined }), false, 'spot-shop'),
-      spot('spot-missions', 'scroll', t('port.missions'), () => app.ui.open('missions'), claimable, 'spot-missions'),
+      spot(
+        'spot-shop',
+        'shop',
+        t('port.shop'),
+        () => app.ui.open('shop', { tab: tutorialStep === 5 ? 'sell' : undefined }),
+        false,
+        'spot-shop',
+      ),
+      spot(
+        'spot-missions',
+        'scroll',
+        t('port.missions'),
+        () => app.ui.open('missions'),
+        claimable,
+        'spot-missions',
+      ),
       spot('spot-map', 'map', t('port.map'), () => app.ui.open('map'), false, 'spot-map'),
       h(
         'button',
-        { class: 'mission-strip', type: 'button', id: 'mission-strip', onclick: () => app.ui.open('missions') },
+        {
+          class: 'mission-strip',
+          type: 'button',
+          id: 'mission-strip',
+          onclick: () => app.ui.open('missions'),
+        },
         icon('compass'),
         story
-          ? h('div', { class: 'mission-strip-body' }, h('b', null, story.title), h('span', null, story.description), progress(p.value, p.target))
+          ? h(
+              'div',
+              { class: 'mission-strip-body' },
+              h('b', null, story.title),
+              h('span', null, story.description),
+              progress(p.value, p.target),
+            )
           : h('div', { class: 'mission-strip-body' }, h('b', null, t('port.story.done'))),
         story ? h('span', { class: 'mission-count' }, `${p.value}/${p.target}`) : null,
       ),
@@ -183,12 +299,32 @@ export class PortHud implements Hud {
           'div',
           { class: 'port-row' },
           button(t('port.journal'), () => app.ui.open('dex'), { icon: 'book', id: 'btn-journal' }),
-          button(`${t('port.creel')} ${state.creel.length}/${game.stats().creelSize}`, () => app.ui.open('creel'), { icon: 'net', id: 'btn-creel' }),
-          button(t('port.achievements'), () => app.ui.open('achievements'), { icon: 'trophy', id: 'btn-ach' }),
+          button(
+            `${t('port.creel')} ${state.creel.length}/${game.stats().creelSize}`,
+            () => app.ui.open('creel'),
+            { icon: 'net', id: 'btn-creel' },
+          ),
+          button(t('port.achievements'), () => app.ui.open('achievements'), {
+            icon: 'trophy',
+            id: 'btn-ach',
+          }),
         ),
-        button(`${t('port.fish')} · ${zone.short}`, () => void app.ui.setMode('fishing'), { kind: 'primary', icon: 'hook', id: 'btn-fish', cls: 'btn-big' }),
+        button(`${t('port.fish')} · ${zone.short}`, () => void app.ui.setMode('fishing'), {
+          kind: 'primary',
+          icon: 'hook',
+          id: 'btn-fish',
+          cls: 'btn-big',
+        }),
       ),
-      ...(app.debug ? [h('button', { class: 'debug-btn', type: 'button', id: 'btn-debug', onclick: () => app.ui.open('debug') }, t('port.debug'))] : []),
+      ...(app.debug
+        ? [
+            h(
+              'button',
+              { class: 'debug-btn', type: 'button', id: 'btn-debug', onclick: () => app.ui.open('debug') },
+              t('port.debug'),
+            ),
+          ]
+        : []),
     );
   }
 }
@@ -244,13 +380,36 @@ export class FishingHud implements Hud {
       h(
         'div',
         { class: 'fight-meters' },
-        h('div', { class: 'meter' }, h('span', null, t('fight.distance')), h('div', { class: 'meter-track' }, this.distance)),
-        h('div', { class: 'meter' }, h('span', null, t('fight.line')), h('div', { class: 'meter-track' }, this.strain)),
-        h('div', { class: 'meter' }, h('span', null, t('fight.hookHold')), h('div', { class: 'meter-track' }, this.slack)),
+        h(
+          'div',
+          { class: 'meter' },
+          h('span', null, t('fight.distance')),
+          h('div', { class: 'meter-track' }, this.distance),
+        ),
+        h(
+          'div',
+          { class: 'meter' },
+          h('span', null, t('fight.line')),
+          h('div', { class: 'meter-track' }, this.strain),
+        ),
+        h(
+          'div',
+          { class: 'meter' },
+          h('span', null, t('fight.hookHold')),
+          h('div', { class: 'meter-track' }, this.slack),
+        ),
       ),
       this.hint,
     );
-    this.el.append(this.top, this.zoneLine, this.tutorialSlot, this.fightBox, this.powerBox, this.prompt, this.bottom);
+    this.el.append(
+      this.top,
+      this.zoneLine,
+      this.tutorialSlot,
+      this.fightBox,
+      this.powerBox,
+      this.prompt,
+      this.bottom,
+    );
     this.refresh();
     this.timer = setInterval(() => !app.ui.covered && this.refresh(), 4000);
   }
@@ -266,7 +425,12 @@ export class FishingHud implements Hud {
     const bait = getBait(game.baitId());
     clear(this.top);
     this.top.append(
-      h('button', { class: 'chip chip-btn', type: 'button', id: 'btn-port', onclick: () => void this.toPort() }, icon('anchor'), h('span', null, t('hud.port'))),
+      h(
+        'button',
+        { class: 'chip chip-btn', type: 'button', id: 'btn-port', onclick: () => void this.toPort() },
+        icon('anchor'),
+        h('span', null, t('hud.port')),
+      ),
       ...statusChips(),
       h('div', { class: 'spacer' }),
       h('div', { class: 'chip chip-coins' }, coinTag(state.coins)),
@@ -279,11 +443,20 @@ export class FishingHud implements Hud {
         'button',
         { class: 'chip chip-btn chip-bait', type: 'button', id: 'btn-bait', onclick: () => openBaitPicker() },
         icon('bait'),
-        h('span', null, `${nameOf(bait)} ${bait.infinite ? t('hud.infinite') : `×${state.baits[bait.id] ?? 0}`}`),
+        h(
+          'span',
+          null,
+          `${nameOf(bait)} ${bait.infinite ? t('hud.infinite') : `×${state.baits[bait.id] ?? 0}`}`,
+        ),
       ),
       h(
         'button',
-        { class: `chip chip-btn${game.creelFull() ? ' chip-warn' : ''}`, type: 'button', id: 'btn-creel', onclick: () => app.ui.open('creel') },
+        {
+          class: `chip chip-btn${game.creelFull() ? ' chip-warn' : ''}`,
+          type: 'button',
+          id: 'btn-creel',
+          onclick: () => app.ui.open('creel'),
+        },
         icon('net'),
         h('span', null, `${state.creel.length}/${game.stats().creelSize}`),
       ),
@@ -399,5 +572,17 @@ export function openBaitPicker(): void {
     if (usable.length <= 1) list.append(h('p', { class: 'muted' }, t('bait.none')));
   };
   render();
-  const close = app.ui.modal(h('div', { class: 'dialog' }, h('h2', null, t('bait.title')), list, h('div', { class: 'dialog-actions' }, button(t('common.close'), () => close(), { kind: 'ghost' }))));
+  const close = app.ui.modal(
+    h(
+      'div',
+      { class: 'dialog' },
+      h('h2', null, t('bait.title')),
+      list,
+      h(
+        'div',
+        { class: 'dialog-actions' },
+        button(t('common.close'), () => close(), { kind: 'ghost' }),
+      ),
+    ),
+  );
 }

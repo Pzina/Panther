@@ -1,7 +1,16 @@
 import { BALANCE } from '../config/balance';
 import type { Rng } from '../core/rng';
 import { getSpecies, LEGEND_ID, SPECIES } from '../data/species';
-import type { CaughtFish, DayPhase, Rarity, Season, Species, VariantId, Weather, ZoneId } from '../data/types';
+import type {
+  CaughtFish,
+  DayPhase,
+  Rarity,
+  Season,
+  Species,
+  VariantId,
+  Weather,
+  ZoneId,
+} from '../data/types';
 import { RARITIES, VARIANTS } from '../data/types';
 import { getZone } from '../data/zones';
 
@@ -83,7 +92,10 @@ export function rollSpecies(ctx: FishingContext, rng: Rng): Species {
   return SPECIES.find((s) => s.zones.includes(ctx.zone) && s.rarity === 'common') ?? SPECIES[0]!;
 }
 
-export function nextPity(pity: { rare: number; legend: number }, rarity: Rarity): { rare: number; legend: number } {
+export function nextPity(
+  pity: { rare: number; legend: number },
+  rarity: Rarity,
+): { rare: number; legend: number } {
   const rank = rarityRank(rarity);
   return {
     rare: rank >= rarityRank('rare') ? 0 : pity.rare + 1,
@@ -131,7 +143,10 @@ export function rollVariant(rng: Rng, luck: number): VariantId {
 }
 
 export function fishValue(species: Species, sizeNorm: number, variant: VariantId): number {
-  return Math.max(1, Math.round(species.baseValue * (0.7 + 0.7 * sizeNorm) * BALANCE.variants[variant].value));
+  return Math.max(
+    1,
+    Math.round(species.baseValue * (0.7 + 0.7 * sizeNorm) * BALANCE.variants[variant].value),
+  );
 }
 
 export function fishXp(species: Species, sizeNorm: number, variant: VariantId, isNew: boolean): number {

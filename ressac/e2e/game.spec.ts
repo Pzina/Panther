@@ -33,7 +33,9 @@ test('new game: intro, tutorial and first fish in under two minutes', async ({ p
   await expect(page.locator('#tutorial')).toContainText('Appâts');
   await page.click('.tab[data-tab="bait"]');
   await page.click('[data-item="ver"] .btn-price');
-  await expect.poll(() => page.evaluate(() => (window as any).ressac.game.state.flags.tutorialDone)).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => (window as any).ressac.game.state.flags.tutorialDone))
+    .toBe(true);
   await expect.poll(() => page.evaluate(() => (window as any).ressac.game.state.baits.ver)).toBe(10);
 
   // The save survives a reload.
@@ -92,7 +94,7 @@ test('the story can be completed with the debug mode', async ({ page }) => {
   await page.click('#go-fosse');
   await page.waitForSelector('#fishing-hud');
   await page.evaluate(() => (window as any).ressac.game.equip('leurre'));
-  await page.evaluate(() => (window as any).ressac.game.state.settings.assist = true);
+  await page.evaluate(() => ((window as any).ressac.game.state.settings.assist = true));
   await catchOne(page);
   await expect(page.locator('#catch-card')).toContainText('La Veilleuse');
   await page.click('#catch-later');
@@ -104,4 +106,27 @@ test('the story can be completed with the debug mode', async ({ page }) => {
   await page.waitForSelector('#ending-continue', { timeout: 10_000 });
   expect(await page.evaluate(() => (window as any).ressac.game.state.story.finished)).toBe(true);
   await page.click('#ending-continue');
+});
+
+test('works offline once loaded (PWA)', async ({ page, context }) => {
+  await boot(page);
+  await page.waitForFunction(
+    async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return Boolean(reg?.active);
+    },
+    null,
+    { timeout: 30_000 },
+  );
+  // Make sure the page is controlled, then cut the network.
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]');
+  await context.setOffline(true);
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]', { timeout: 30_000 });
+  await page.click('#tap-start');
+  await expect(page.locator('#btn-play')).toBeVisible();
+  const manifest = await page.evaluate(async () => (await fetch('./manifest.webmanifest')).json());
+  expect(manifest.display).toBe('standalone');
+  await context.setOffline(false);
 });

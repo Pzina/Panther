@@ -22,8 +22,12 @@ export function showCatchCard(result: CatchResult): Promise<CatchChoice> {
       'div',
       { class: 'catch-tags' },
       result.isNew ? h('span', { class: 'tag tag-new' }, t('catch.new')) : null,
-      !result.isNew && (result.recordSize || result.recordWeight) ? h('span', { class: 'tag tag-record' }, t('catch.record')) : null,
-      fish.variant !== 'normal' ? h('span', { class: 'tag tag-variant' }, t('catch.variant', { name: t(`variant.${fish.variant}`) })) : null,
+      !result.isNew && (result.recordSize || result.recordWeight)
+        ? h('span', { class: 'tag tag-record' }, t('catch.record'))
+        : null,
+      fish.variant !== 'normal'
+        ? h('span', { class: 'tag tag-variant' }, t('catch.variant', { name: t(`variant.${fish.variant}`) }))
+        : null,
     );
     const content = h(
       'div',
@@ -42,22 +46,42 @@ export function showCatchCard(result: CatchResult): Promise<CatchChoice> {
       ),
       h('div', { class: 'catch-xp' }, t('catch.xp', { n: result.xp })),
       h('p', { class: 'catch-flavor' }, species.flavor),
-      full ? h('p', { class: 'catch-full' }, t('catch.full', { n: game.state.creel.length, max: game.stats().creelSize })) : null,
+      full
+        ? h(
+            'p',
+            { class: 'catch-full' },
+            t('catch.full', { n: game.state.creel.length, max: game.stats().creelSize }),
+          )
+        : null,
       h(
         'div',
         { class: 'catch-actions' },
-        button(t('catch.later'), () => choose('later'), { kind: 'primary', icon: 'net', disabled: full, id: 'catch-later' }),
+        button(t('catch.later'), () => choose('later'), {
+          kind: 'primary',
+          icon: 'net',
+          disabled: full,
+          id: 'catch-later',
+        }),
         h(
           'div',
           { class: 'catch-row' },
-          button(t('catch.keep'), () => choose('keep'), { icon: 'lock', disabled: full, id: 'catch-keep', label: `${t('catch.keep')} — ${t('catch.keepHint')}` }),
+          button(t('catch.keep'), () => choose('keep'), {
+            icon: 'lock',
+            disabled: full,
+            id: 'catch-keep',
+            label: `${t('catch.keep')} — ${t('catch.keepHint')}`,
+          }),
           button(t('catch.release'), () => choose('release'), {
             icon: 'heart',
             id: 'catch-release',
             label: `${t('catch.release')} — ${t('catch.releaseHint', { n: BALANCE.reputation.release })}`,
           }),
         ),
-        h('p', { class: 'catch-hint' }, `${t('catch.keep')} : ${t('catch.keepHint').toLowerCase()} · ${t('catch.release')} : ${t('catch.releaseHint', { n: BALANCE.reputation.release })}`),
+        h(
+          'p',
+          { class: 'catch-hint' },
+          `${t('catch.keep')} : ${t('catch.keepHint').toLowerCase()} · ${t('catch.release')} : ${t('catch.releaseHint', { n: BALANCE.reputation.release })}`,
+        ),
       ),
     );
     // Closing with the back button keeps the fish when possible.

@@ -68,7 +68,10 @@ export const BALANCE = {
   bite: {
     minSeconds: 4,
     maxSeconds: 10,
-    weather: { sun: 1.08, clouds: 1, rain: 0.86, storm: 0.76, fog: 0.95, glow: 0.8 } as Record<Weather, number>,
+    weather: { sun: 1.08, clouds: 1, rain: 0.86, storm: 0.76, fog: 0.95, glow: 0.8 } as Record<
+      Weather,
+      number
+    >,
     phase: { dawn: 0.85, day: 1, dusk: 0.85, night: 0.95 } as Record<DayPhase, number>,
     perfectMult: 0.75,
     fakeBiteChance: 0.4,
