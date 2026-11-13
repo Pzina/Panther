@@ -330,14 +330,9 @@ export class PortView extends View {
 
   /** Ground height where the player can stand, or null when the spot is not walkable. */
   private ground(x: number, z: number): number | null {
-    if (this.dock) {
-      // The supplied dock: stand where a plank is under the feet (posts and gaps are not walkable).
-      if (Math.abs(x) <= 13.2 && z >= 0.2 && z <= 8.4) {
-        this.ray.set(new THREE.Vector3(x, 12, z), new THREE.Vector3(0, -1, 0));
-        const hit = this.ray.intersectObject(this.dock, true)[0];
-        if (hit && Math.abs(hit.point.y - 1.2) < 0.5) return hit.point.y;
-      }
-    } else if (Math.abs(x) <= 7.8 && z >= 1.9 && z <= 6.5) return 1.2;
+    // The quay deck (the supplied dock is 18.5 m long and about 4 m wide once scaled).
+    if (this.dock ? Math.abs(x) <= 9.1 && z >= 2.1 && z <= 6.3 : Math.abs(x) <= 7.8 && z >= 1.9 && z <= 6.5)
+      return 1.2;
     // Gangway from the quay to the shore.
     if (x >= 1.1 && x <= 3.3 && z >= -2.2 && z < 2.4) return 1.2;
     if (Math.abs(x) > 17 || z < -26 || z > 2.4) return null;

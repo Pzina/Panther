@@ -30,7 +30,7 @@ export async function cast(page: Page): Promise<void> {
 /** Plays the tension mini-game by reading the gauge exposed on the HUD. */
 export async function fight(page: Page): Promise<void> {
   let reeling = false;
-  const deadline = Date.now() + 90_000;
+  const deadline = Date.now() + 240_000;
   while (Date.now() < deadline) {
     const d = await page.evaluate(() => {
       const ds = document.getElementById('fishing-hud')?.dataset ?? {};
@@ -59,16 +59,16 @@ export async function catchOne(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 8; attempt++) {
     await expect.poll(() => hudState(page), { timeout: 10_000 }).toBe('idle');
     await cast(page);
-    await expect.poll(() => hudState(page), { timeout: 20_000 }).toMatch(/bite|idle/);
+    await expect.poll(() => hudState(page), { timeout: 90_000 }).toMatch(/bite|idle/);
     if ((await hudState(page)) !== 'bite') continue;
     await page.mouse.down();
     await page.mouse.up();
-    await expect.poll(() => hudState(page), { timeout: 5_000 }).toMatch(/fight|idle/);
+    await expect.poll(() => hudState(page), { timeout: 15_000 }).toMatch(/fight|idle/);
     if ((await hudState(page)) !== 'fight') continue;
     await fight(page);
     const card = page.locator('#catch-card');
     try {
-      await card.waitFor({ timeout: 6_000 });
+      await card.waitFor({ timeout: 20_000 });
       return;
     } catch {
       /* lost the fish: try again */

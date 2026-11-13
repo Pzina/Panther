@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { addLook } from '../ui/joystick';
+import { quality } from './quality';
 
 /** A 3D scene of the game (title, port, fishing). */
 export abstract class View {
@@ -175,6 +176,8 @@ export class Stage {
       if (this.frames >= 40) {
         if (this.slowFrames > 24 && this.quality > 0.45) {
           this.quality *= 0.75;
+          // Slow device: also give up the cast shadows.
+          quality.low = this.quality < 0.6;
           this.resize();
         }
         this.frames = 0;

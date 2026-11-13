@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Weather, ZoneId } from '../data/types';
 import { getZone } from '../data/zones';
+import { quality } from './quality';
 import { nightness, skyColors } from './skyColors';
 
 export interface EnvConfig {
@@ -288,6 +289,7 @@ export class Environment {
 
   update(dt: number, camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
     this.time += dt;
+    this.sun.castShadow = !quality.low;
     this.uniforms.uTime.value = this.time * (this.cfg.reducedMotion() ? 0.3 : 1);
     this.refresh -= dt;
     const weather = this.cfg.weather();

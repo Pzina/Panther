@@ -91,10 +91,18 @@ export function creditsScreen(): Screen {
         h('li', null, '« Old Man » par Bake3D (bake3d.ai) — licence CC BY 4.0'),
         h('li', null, '« FishingBoat » par Godot2000 (sketchfab.com/Godot2000) — licence CC BY 4.0'),
         h('li', null, '« Rustic Wooden Dock » par Evan16 (sketchfab.com/evan_16) — licence CC BY 4.0'),
-        h('li', null, 'Pin, projecteur portable, textures de sable et de galets : Poly Haven (polyhaven.com) — CC0'),
+        h(
+          'li',
+          null,
+          'Pin, projecteur portable, textures de sable et de galets : Poly Haven (polyhaven.com) — CC0',
+        ),
         h('li', null, 'Canne à pêche : modèle fourni par l’auteur du projet'),
       ),
-      h('p', { class: 'muted' }, 'Les modèles ont été allégés (géométrie simplifiée, textures réduites) pour le jeu.'),
+      h(
+        'p',
+        { class: 'muted' },
+        'Les modèles ont été allégés (géométrie simplifiée, textures réduites) pour le jeu.',
+      ),
       h('h3', null, 'Police'),
       h(
         'p',
