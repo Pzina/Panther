@@ -9,6 +9,9 @@ const TEXTURES = ['sand', 'pebbles'] as const;
 export type ModelName = (typeof MODELS)[number];
 export type TextureName = (typeof TEXTURES)[number];
 
+/** File extension of the models. Some hosts only serve known types, hence the build-time override. */
+const MODEL_EXT = (import.meta.env.VITE_MODEL_EXT as string | undefined) ?? 'glb';
+
 const models = new Map<ModelName, GLTF>();
 const textures = new Map<TextureName, THREE.Texture>();
 
@@ -40,7 +43,7 @@ export async function loadAssets(onProgress: (ratio: number) => void): Promise<v
   await Promise.all([
     ...MODELS.map(async (name) => {
       try {
-        const gltf = await loader.loadAsync(`./assets/${name}.glb`);
+        const gltf = await loader.loadAsync(`./assets/${name}.${MODEL_EXT}`);
         gltf.scene.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
