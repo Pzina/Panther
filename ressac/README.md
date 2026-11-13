@@ -70,6 +70,8 @@ scripts/            simulation, icônes, captures, gabarit du service worker
 
 **Pourquoi des menus en HTML/CSS par-dessus le canvas ?** Le moteur 3D dessine le monde ; tout ce qui se lit (menus, listes, fiches, boutons) est en HTML/CSS : texte net à toutes les densités d'écran, défilement natif, mise en page fluide de 360 px à la tablette, *safe areas*, taille de texte réglable, accessibilité, et un style unique. Au port, les boutons HTML sont accrochés aux lieux 3D qu'ils ouvrent (projection à chaque image).
 
+**Version PC.** La même application s'adapte à l'écran : en fenêtre paysage (ordinateur), la vue 3D occupe tout l'écran avec un cadrage élargi, les menus s'ouvrent dans un panneau centré à deux colonnes, le carnet passe sur 4 colonnes et une aide clavier s'affiche. Commandes : flèches ou ZQSD pour marcher, E ou Entrée pour entrer dans le lieu proche, Espace ou clic maintenu pour lancer, ferrer et mouliner, souris pour viser, Échap pour revenir ou mettre en pause. Le joystick tactile est masqué quand l'appareil a une souris.
+
 **Déplacement du personnage.** Un joystick tactile (`src/ui/joystick.ts`, flèches ou ZQSD au clavier) déplace le joueur : au port, il marche librement sur le quai, la passerelle et l'île, la caméra le suit et le bouton d'un lieu s'illumine quand il s'en approche ; en pêche, il se déplace sur le pont de la barque. Le personnage actuel est généré par le code (`makeCharacter` dans `src/three/props.ts`) en attendant un modèle fourni.
 
 **Rendu 3D (`src/three/`).**
@@ -155,7 +157,7 @@ npx cap open ios           # ouvre Xcode → Product > Archive
 | --- | --- |
 | `npm run build` | sans erreur ; JS ≈ 230 Ko gzip au total (dont Three.js ≈ 134 Ko), bien sous la limite de 2 Mo |
 | `npm test` | 71 tests unitaires verts |
-| `npm run test:e2e` | 4 scénarios verts : nouvelle partie → intro → tutoriel → premier poisson (≈ 25 s) → vente → appât → rechargement ; sauvegarde corrompue → copie de secours ; histoire complète en mode debug jusqu’à la Veilleuse et l’écran de fin ; jeu rechargé hors ligne grâce au service worker |
+| `npm run test:e2e` | 5 scénarios verts : nouvelle partie → intro → tutoriel → premier poisson (≈ 25 s) → vente → appât → rechargement ; sauvegarde corrompue → copie de secours ; histoire complète en mode debug jusqu’à la Veilleuse et l’écran de fin ; jeu rechargé hors ligne grâce au service worker ; version PC (fenêtre 1280×720, marche au clavier, E pour entrer, Espace pour lancer) |
 | `npm run lint` | ESLint + Prettier sans erreur |
 | `npm run simulate` | voir `GAME_DESIGN.md` § Équilibrage |
 

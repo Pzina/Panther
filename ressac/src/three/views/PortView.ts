@@ -404,7 +404,7 @@ export class PortView extends View {
       const sx = (v.x * 0.5 + 0.5) * 100;
       const sy = (-v.y * 0.5 + 0.5) * 100;
       // A place that left the view has no button: walk back to it.
-      const visible = v.z < 1 && sx > 6 && sx < 94 && sy > 20 && sy < 70;
+      const visible = v.z < 1 && sx > 4 && sx < 96 && sy > 8 && sy < 74;
       el.style.display = visible ? '' : 'none';
       el.style.left = `${Math.min(86, Math.max(14, sx)).toFixed(1)}%`;
       el.style.top = `${Math.min(62, Math.max(27, sy)).toFixed(1)}%`;

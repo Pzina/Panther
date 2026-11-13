@@ -262,6 +262,7 @@ app.ui.holdNotifications = () =>
   app.ui.mode === 'home' || (app.ui.mode === 'fishing' && !app.game.state.flags.tutorialDone);
 app.ui.onModeChange = (mode) => {
   document.body.dataset.mode = mode;
+  kbdHint.textContent = mode === 'port' ? t('kbd.port') : mode === 'fishing' ? t('kbd.fishing') : '';
   if (mode !== 'home') {
     app.audio.unlock();
   } else {
@@ -332,9 +333,19 @@ stage.register('Port', (st) => new PortView(st));
 stage.register('Fishing', (st) => new FishingView(st));
 app.stage = stage;
 
+/** Desktop layout: landscape window. The same build serves phones (portrait) and PCs. */
+function syncLayout(): void {
+  document.body.classList.toggle('desktop', window.innerWidth > window.innerHeight * 1.05);
+}
+syncLayout();
+
+const kbdHint = h('div', { class: 'kbd-hint', 'aria-hidden': 'true' });
+root.appendChild(kbdHint);
+
 let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 window.addEventListener('resize', () => {
   if (resizeTimer) clearTimeout(resizeTimer);
+  syncLayout();
   resizeTimer = setTimeout(() => stage.resize(), 80);
 });
 
@@ -371,6 +382,15 @@ window.addEventListener('popstate', () => {
 });
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') app.ui.back();
+  // E / Enter: use the place the character is standing next to (port).
+  if (
+    (event.code === 'KeyE' || event.key === 'Enter') &&
+    app.ui.mode === 'port' &&
+    !app.ui.covered &&
+    document.activeElement === document.body
+  ) {
+    document.querySelector<HTMLElement>('.spot.is-near, #btn-fish.is-near')?.click();
+  }
 });
 
 document.addEventListener('visibilitychange', () => {

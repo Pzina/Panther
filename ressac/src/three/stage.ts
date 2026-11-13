@@ -6,6 +6,7 @@ export abstract class View {
   readonly camera = new THREE.PerspectiveCamera(58, 0.5, 0.1, 1200);
   width = 390;
   height = 844;
+  private baseFov: number | undefined;
 
   constructor(readonly stage: Stage) {}
 
@@ -13,6 +14,9 @@ export abstract class View {
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
+    // Field of view chosen for portrait; narrowed on wide (desktop) screens to keep the framing.
+    this.baseFov ??= this.camera.fov;
+    this.camera.fov = width > height ? this.baseFov * 0.68 : this.baseFov;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }

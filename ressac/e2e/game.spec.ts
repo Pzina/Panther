@@ -130,3 +130,44 @@ test('works offline once loaded (PWA)', async ({ page, context }) => {
   expect(manifest.display).toBe('standalone');
   await context.setOffline(false);
 });
+
+test.describe('desktop layout', () => {
+  test.use({ viewport: { width: 1280, height: 720 }, isMobile: false, hasTouch: false });
+
+  test('landscape window: keyboard walking, E to enter, space to cast', async ({ page }) => {
+    await boot(page);
+    expect(await page.evaluate(() => document.body.classList.contains('desktop'))).toBe(true);
+    await page.click('#tap-start');
+    await page.evaluate(() => {
+      const r = (window as any).ressac;
+      Object.assign(r.game.state.flags, { introSeen: true, tutorialDone: true, tutorialStep: 7 });
+      r.game.state.story.introSeen = true;
+      r.game.state.login.lastDate = '2099-01-01';
+      r.save();
+    });
+    await page.click('#btn-play');
+    await page.waitForSelector('#port-hud');
+    await dismissDialogs(page);
+    await expect(page.locator('.kbd-hint')).toContainText('ZQSD');
+    // Walk left along the quay to Jo's stall, then enter with E.
+    await page.keyboard.down('ArrowLeft');
+    await expect(page.locator('#spot-shop')).toHaveClass(/is-near/, { timeout: 15_000 });
+    await page.keyboard.up('ArrowLeft');
+    await page.keyboard.press('KeyE');
+    await expect.poll(() => page.evaluate(() => (window as any).ressac.ui.topScreen)).toBe('shop');
+    await page.keyboard.press('Escape');
+    await page.click('#btn-fish');
+    await page.waitForSelector('#fishing-hud');
+    await expect.poll(() => hudState(page)).toBe('idle');
+    await page.waitForFunction(
+      () => !document.querySelector('.curtain.is-in, .curtain.is-out, .modal-backdrop'),
+    );
+    await page.keyboard.down('Space');
+    await expect.poll(() => hudState(page)).toBe('charging');
+    await page.waitForFunction(
+      () => Number(document.getElementById('fishing-hud')?.dataset.power ?? 0) > 0.5,
+    );
+    await page.keyboard.up('Space');
+    await expect.poll(() => hudState(page)).toMatch(/casting|waiting/);
+  });
+});
