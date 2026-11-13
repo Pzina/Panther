@@ -39,7 +39,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
-        manualChunks: { phaser: ['phaser'] },
+        manualChunks: { three: ['three'] },
       },
     },
   },

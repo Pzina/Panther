@@ -411,7 +411,7 @@ export function shopScreen(params: Record<string, unknown>): Screen {
     el: shell.el,
     refresh: render,
     onClose: () => {
-      const scene = app.phaser?.scene.getScene('Port') as { refreshBoat?: () => void } | null;
+      const scene = app.stage?.scene.getScene('Port') as { refreshBoat?: () => void } | null;
       if (app.ui.mode === 'port') scene?.refreshBoat?.();
     },
   };

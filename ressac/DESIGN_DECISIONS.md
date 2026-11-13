@@ -4,9 +4,9 @@ Choix faits pendant la réalisation, quand le cahier des charges laissait la que
 
 ## Technique
 
-1. **Menus en HTML/CSS au-dessus du canvas Phaser.** Phaser dessine la mer, le ciel, la météo, le bateau, la ligne et les particules ; tout ce qui se lit est en HTML. Texte net à toute densité, défilement natif, *safe areas*, taille de texte réglable, accessibilité, un seul fichier de style. Voir le README.
-2. **Monde logique de 390 unités de large**, hauteur variable selon l'écran, canvas en haute définition (jusqu'à ×2,5). Sur ordinateur, le jeu est affiché dans une colonne au ratio portrait (largeur max = 62 % de la hauteur).
-3. **Phaser 3.90.0** épinglé exactement ; Vite 7, TypeScript 5.9 strict, Vitest 3, Playwright 1.63 (version du navigateur préinstallé).
+1. **Passage à la 3D avec Three.js.** Phaser 3, imposé au départ, est un moteur 2D ; la demande d'un jeu en 3D réaliste l'a remplacé par Three.js 0.170.0 (épinglé). Seul le rendu a été réécrit (`src/three/`) : règles, écrans HTML, sauvegarde et tests sont inchangés.
+2. **Réalisme sans aucun fichier importé.** La contrainte « zéro asset externe » est conservée : ciel, eau, relief, bateau et poissons sont générés par le code. Le réalisme vient de la lumière (ciel calculé, reflets, ombres, tone mapping filmique), de l'eau et des poissons ; arbres et bâtiments restent simples.
+3. **Menus en HTML/CSS au-dessus du canvas 3D**, vue à la première personne depuis l'arrière de la barque pour la pêche (la cabine et le mât des gros bateaux ne sont pas affichés dans cette vue pour ne pas boucher l'horizon). Résolution adaptative : si les images sont lentes, le moteur dessine moins de pixels.
 4. **Aucune police embarquée** : la police système de l'appareil (San Francisco, Roboto…) est très lisible et ne pèse rien. Aucune licence tierce à citer.
 5. **Données en TypeScript typé** plutôt qu'en JSON : le compilateur vérifie chaque espèce, chaque objet et chaque mission ; les tests contrôlent la cohérence entre fichiers.
 6. **Météo calculée, pas stockée** : c'est une fonction pure de (graine du monde, zone, créneau de 3 h). Rien à sauvegarder, et elle reste identique après un rechargement.
@@ -18,7 +18,8 @@ Choix faits pendant la réalisation, quand le cahier des charges laissait la que
 
 ## Gameplay
 
-12. **Profondeur = distance de lancer × portée de la canne.** Une meilleure canne ouvre réellement de nouvelles espèces dans une zone déjà connue.
+12. **Images du carnet = photos du modèle 3D.** Chaque espèce est rendue une fois dans un petit studio 3D ; les espèces de la première zone le sont au chargement (barre de progression réelle), les autres à leur première apparition. Une espèce inconnue est la même image, noircie en silhouette. Le bouchon grossit avec la distance pour rester lisible.
+12b. **Profondeur = distance de lancer × portée de la canne.** Une meilleure canne ouvre réellement de nouvelles espèces dans une zone déjà connue.
 13. **Le premier poisson du tutoriel est garanti** (Gobie des galets), son combat ne peut pas être perdu et rater la touche le fait revenir : le joueur ne peut pas rester bloqué. Le tutoriel peut être passé à tout moment, et rejoué depuis les paramètres.
 14. **Si le joueur n'a pas assez de pièces pour ses premiers vers**, Hervé avance la différence (une seule fois, pendant le tutoriel).
 15. **« Garder » verrouille le poisson** dans le vivier (il ne part pas avec « Tout vendre ») ; « Vendre plus tard » le range normalement ; « Relâcher » donne de la réputation. Fermer la carte avec le bouton retour équivaut à « Vendre plus tard » (ou relâcher si le vivier est plein).

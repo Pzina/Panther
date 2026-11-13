@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { app } from './app';
 import { AudioEngine } from './audio/engine';
 import { AUTOSAVE_SECONDS, GAME_NAME } from './config/constants';
@@ -10,11 +9,11 @@ import { createNewState, type GameState } from './core/state';
 import { getAchievement } from './data/achievements';
 import { JOURNAL_PAGES, TIPS } from './data/dialogues';
 import { getZone } from './data/zones';
-import { BootScene } from './scenes/BootScene';
-import { FishingScene } from './scenes/FishingScene';
-import { PortScene } from './scenes/PortScene';
-import { PreloadScene } from './scenes/PreloadScene';
-import { TitleScene } from './scenes/TitleScene';
+import { preloadFishImages } from './three/fishMesh';
+import { Stage } from './three/stage';
+import { FishingView } from './three/views/FishingView';
+import { PortView } from './three/views/PortView';
+import { TitleView } from './three/views/TitleView';
 import { claimableMilestones, collectionPercent } from './systems/progression';
 import { button, h } from './ui/dom';
 import { FishingHud, HomeHud, PortHud } from './ui/hud';
@@ -22,8 +21,6 @@ import { registerScreens } from './ui/screens';
 import { Ui, wait } from './ui/ui';
 import { rewardLine } from './ui/widgets';
 import './ui/style.css';
-
-const MAX_DPR = 2.5;
 
 function pickStorage(): StorageLike {
   try {
@@ -48,7 +45,7 @@ app.debug = debug;
 app.saves = saves;
 app.audio = new AudioEngine();
 app.ui = new Ui(root);
-app.phaser = null;
+app.stage = null;
 app.hasSave = () => app.game.state.flags.introSeen || app.game.state.stats.catches > 0;
 app.save = () => {
   if (app.hasSave()) saves.save(app.game.state);
@@ -321,7 +318,7 @@ async function handleCorruptedSave(): Promise<void> {
   }
 }
 
-// ───────────────────────── Splash & Phaser ─────────────────────────
+// ───────────────────────── Splash & 3D stage ─────────────────────────
 
 const splash = document.getElementById('splash');
 const splashBar = document.getElementById('splash-bar');
@@ -329,64 +326,39 @@ const splashTip = document.getElementById('splash-tip');
 if (splashTip) splashTip.textContent = TIPS[Math.floor(Math.random() * TIPS.length)]!;
 const splashStart = performance.now();
 
-function canvasSize(): { width: number; height: number; dpr: number } {
-  const rect = root.getBoundingClientRect();
-  const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
-  return {
-    width: Math.max(1, Math.round(rect.width * dpr)),
-    height: Math.max(1, Math.round(rect.height * dpr)),
-    dpr,
-  };
-}
-
-const size = canvasSize();
-const phaser = new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'game',
-  backgroundColor: '#0f2a3d',
-  banner: false,
-  disableContextMenu: true,
-  scale: { mode: Phaser.Scale.NONE, width: size.width, height: size.height, zoom: 1 / size.dpr },
-  render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
-  fps: { target: 60, smoothStep: true },
-  input: { activePointers: 2 },
-  audio: { noAudio: true },
-  scene: [BootScene, PreloadScene, TitleScene, PortScene, FishingScene],
-});
-app.phaser = phaser;
+const stage = new Stage(document.getElementById('game')!);
+stage.register('Title', (st) => new TitleView(st));
+stage.register('Port', (st) => new PortView(st));
+stage.register('Fishing', (st) => new FishingView(st));
+app.stage = stage;
 
 let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 window.addEventListener('resize', () => {
   if (resizeTimer) clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    const s = canvasSize();
-    phaser.scale.setZoom(1 / s.dpr);
-    phaser.scale.resize(s.width, s.height);
-  }, 80);
+  resizeTimer = setTimeout(() => stage.resize(), 80);
 });
 
-phaser.events.on('ressac-progress', (p: number) => {
-  if (splashBar) splashBar.style.width = `${Math.round(p * 100)}%`;
-});
-phaser.events.once('ressac-ready', () => {
-  void (async () => {
-    const elapsed = performance.now() - splashStart;
-    if (elapsed < 900) await wait(900 - elapsed);
-    phaser.scene.stop('Preload');
-    await app.ui.setMode('home', true);
-    splash?.classList.add('is-done');
-    setTimeout(() => splash?.remove(), 700);
-    document.body.dataset.ready = '1';
-    if (!loaded.state && !loaded.corrupted) {
-      const mirrored = await saves.loadFromMirror();
-      if (mirrored) {
-        app.loadState(mirrored);
-        app.ui.hud?.refresh();
-      }
+/** Real loading work: the first species are modelled in 3D and photographed for the notebook. */
+async function start(): Promise<void> {
+  await preloadFishImages((p) => {
+    if (splashBar) splashBar.style.width = `${Math.round(p * 100)}%`;
+  });
+  const elapsed = performance.now() - splashStart;
+  if (elapsed < 900) await wait(900 - elapsed);
+  await app.ui.setMode('home', true);
+  splash?.classList.add('is-done');
+  setTimeout(() => splash?.remove(), 700);
+  document.body.dataset.ready = '1';
+  if (!loaded.state && !loaded.corrupted) {
+    const mirrored = await saves.loadFromMirror();
+    if (mirrored) {
+      app.loadState(mirrored);
+      app.ui.hud?.refresh();
     }
-    await handleCorruptedSave();
-  })();
-});
+  }
+  await handleCorruptedSave();
+}
+void start();
 
 // ───────────────────────── Platform glue ─────────────────────────
 

@@ -89,7 +89,7 @@ export class Ui {
 
   private syncPause(): void {
     const key = this.activeSceneKey();
-    const scenes = app.phaser?.scene;
+    const scenes = app.stage?.scene;
     if (!key || !scenes) return;
     const shouldPause = this.covered && this.mode !== 'home';
     if (shouldPause && scenes.isActive(key)) scenes.pause(key);
@@ -116,14 +116,13 @@ export class Ui {
     this.switching = true;
     const apply = (): void => {
       this.closeAllScreens();
-      const scenes = app.phaser?.scene;
+      const scenes = app.stage?.scene;
       const previous = this.activeSceneKey();
       this.mode = mode;
       this.mountHud();
       if (scenes) {
         if (previous && previous !== SCENE_OF_MODE[mode]) scenes.stop(previous);
-        if (previous === SCENE_OF_MODE[mode]) scenes.getScene(previous)?.scene.restart();
-        else scenes.start(SCENE_OF_MODE[mode]);
+        scenes.start(SCENE_OF_MODE[mode]);
       }
       this.root.dataset.mode = mode;
     };

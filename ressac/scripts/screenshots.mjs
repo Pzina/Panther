@@ -12,7 +12,7 @@ const browser = await chromium.launch();
 async function open(width, height, url = '/') {
   const ctx = await browser.newContext({
     viewport: { width, height },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
     locale: 'fr-FR',
@@ -27,7 +27,7 @@ const settle = (page, ms = 500) => page.waitForTimeout(ms);
 const idle = (page) => page.waitForFunction(() => !document.querySelector('.curtain.is-in, .curtain.is-out'));
 async function shot(page, name) {
   await idle(page);
-  await settle(page, 450);
+  await settle(page, 1500);
   await page.screenshot({ path: `${OUT}${name}.png` });
   console.log('✓', name);
 }

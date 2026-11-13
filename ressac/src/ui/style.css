@@ -2386,3 +2386,18 @@ body.reduced-motion .prompt-alert {
 .setting-wrap .seg {
   flex: 1;
 }
+
+.fish-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 12 / 7;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
+  pointer-events: none;
+}
+.fish-art.is-unknown img {
+  filter: brightness(0) opacity(0.5);
+}
+#app.night .fish-art.is-unknown img {
+  filter: brightness(0) invert(0.75) opacity(0.6);
+}

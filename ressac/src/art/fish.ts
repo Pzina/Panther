@@ -18,7 +18,7 @@ const VIEW_W = 240;
 const VIEW_H = 140;
 const CY = 70;
 
-interface Profile {
+export interface Profile {
   peak: number;
   top: number;
   blunt: number;
@@ -26,7 +26,7 @@ interface Profile {
   taper: number;
 }
 
-const PROFILES: Record<BodyShape, Profile> = {
+export const PROFILES: Record<BodyShape, Profile> = {
   fusiform: { peak: 0.36, top: 0.5, blunt: 0.55, tailBase: 0.17, taper: 1 },
   round: { peak: 0.46, top: 0.5, blunt: 0.9, tailBase: 0.2, taper: 1.1 },
   eel: { peak: 0.2, top: 0.5, blunt: 0.75, tailBase: 0.34, taper: 0.7 },
@@ -71,7 +71,7 @@ function geometry(art: FishArt): Geometry {
 }
 
 /** Body thickness factor (0..1) at position u along the body (0 = snout, 1 = tail base). */
-function thickness(p: Profile, u: number): number {
+export function thickness(p: Profile, u: number): number {
   if (u <= p.peak) {
     const e = 1 - 0.55 * p.blunt;
     return Math.pow(Math.sin((Math.PI / 2) * (u / p.peak)), e);
@@ -260,14 +260,14 @@ function sparkles(key: string, color: string, still: boolean): string {
   return out;
 }
 
-interface Palette {
+export interface Palette {
   c1: string;
   c2: string;
   c3: string;
   pupil: string;
 }
 
-function paletteFor(art: FishArt, variant: VariantId): Palette {
+export function paletteFor(art: FishArt, variant: VariantId): Palette {
   switch (variant) {
     case 'albino':
       return { c1: '#f7f0ea', c2: '#f2c4bd', c3: '#f8ddd6', pupil: '#c0392b' };
@@ -430,7 +430,7 @@ export function fishSvg(art: FishArt, options: FishSvgOptions = {}): string {
   );
 }
 
-/** Data URL usable as an <img> source or as a Phaser texture. */
+/** Data URL usable as an <img> source. */
 export function fishDataUrl(art: FishArt, options: FishSvgOptions = {}): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(fishSvg(art, { ...options, still: true, pixelSize: options.pixelSize ?? 240 }))}`;
 }

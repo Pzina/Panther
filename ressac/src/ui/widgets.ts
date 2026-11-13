@@ -1,9 +1,9 @@
-import { fishSvg } from '../art/fish';
 import { raritySvg } from '../art/icons';
 import { formatNumber, loc, t } from '../core/i18n';
 import { getItem } from '../data/equipment';
 import type { CaughtFish, Rarity, Reward, Species, VariantId } from '../data/types';
 import { getZone } from '../data/zones';
+import { fishImage } from '../three/fishMesh';
 import { h, icon } from './dom';
 
 /** Localised name / description of a piece of content (species, item, zone…). */
@@ -28,21 +28,24 @@ export function rarityTag(rarity: Rarity): HTMLSpanElement {
   );
 }
 
+/** Picture of a species, rendered from its 3D model. Unknown species are shown as a dark silhouette. */
 export function fishArt(
   species: Species,
   variant: VariantId = 'normal',
   known = true,
   cls = '',
 ): HTMLDivElement {
-  return h('div', {
-    class: `fish-art ${known ? '' : 'is-unknown'} ${cls}`.trim(),
-    html: fishSvg(species.art, {
-      key: species.id,
-      variant,
-      silhouette: !known,
-      still: document.body.classList.contains('reduced-motion'),
+  return h(
+    'div',
+    { class: `fish-art ${known ? '' : 'is-unknown'} ${cls}`.trim() },
+    h('img', {
+      src: fishImage(species.id, known ? variant : 'normal'),
+      alt: '',
+      draggable: 'false',
+      width: 480,
+      height: 280,
     }),
-  });
+  );
 }
 
 export function formatSize(cm: number): string {

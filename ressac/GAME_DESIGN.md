@@ -84,7 +84,7 @@ poids = poids_rareté
 | Le Large | s13, bateau 3 | ×6,8 | houle : la tension monte et descend ; plus de fausses touches |
 | La Fosse | s16, bateau 4 | ×11 | nuit permanente : la jauge n'apparaît que par éclairs, il faut lire les vibrations et le son (désactivé en combat assisté) |
 
-Chaque zone a sa palette, son décor, son ambiance sonore et sa gamme musicale.
+Chaque zone a son paysage 3D, sa couleur d'eau, son état de mer, son ambiance sonore et sa gamme musicale.
 
 ## 6. Économie
 

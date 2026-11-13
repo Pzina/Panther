@@ -9,7 +9,8 @@ Vous héritez d'une vieille barque et d'une cabane sur l'archipel de Ressac. L'i
 - heure, météo (dont la rare « marée luisante »), saisons et appâts qui changent les prises ;
 - 18 missions d'histoire en 3 actes, 3 missions quotidiennes, 12 défis, 39 succès ;
 - une boutique complète (8 cannes, 6 moulinets, 5 fils, 5 hameçons, 10 appâts + le leurre de l'histoire, 4 bateaux, 18 cosmétiques) ;
-- graphismes 100 % vectoriels générés par le code, sons et musique 100 % synthétisés (Web Audio).
+- un monde en **3D temps réel** (Three.js) : mer animée qui reflète le ciel, soleil, lune, nuages, pluie, orage, brouillard, îles en relief, bateau, canne, poissons modélisés ;
+- graphismes 100 % générés par le code (aucune image ni modèle importé), sons et musique 100 % synthétisés (Web Audio).
 
 Le nom du jeu est centralisé dans `src/config/constants.ts` (`GAME_NAME`).
 
@@ -45,16 +46,17 @@ npm run screenshots  # captures de tous les écrans (nécessite `npm run preview
 
 ```
 src/
-  main.ts           point d'entrée : Phaser, sauvegarde auto, retour Android, arrière-plan, notifications
+  main.ts           point d'entrée : moteur 3D, sauvegarde auto, retour Android, arrière-plan, notifications
   app.ts            services partagés (jeu, sauvegarde, audio, interface)
   config/           constantes et équilibrage (TOUS les chiffres du jeu sont dans balance.ts)
   data/             espèces, zones, équipement, missions, succès, dialogues (TypeScript typé)
   core/             état, sauvegarde + migrations, événements, horloge, RNG à graine, i18n, façade Game
   systems/          pêche (tables pondérées + pitié), combat, météo, économie, progression, missions
-  scenes/           scènes Phaser : Boot, Preload, Title (accueil), Port, Fishing
+  three/            rendu 3D (Three.js) : ciel, eau, relief, objets, poissons 3D, moteur de scènes
+    views/          les trois scènes : TitleView (accueil), PortView, FishingView
   ui/               couche HTML/CSS : HUD, écrans, modales, toasts, transitions, style.css
     screens/        boutique, vivier, carnet, missions, succès, carte, cabane, paramètres, pause…
-  art/              générateurs procéduraux : poissons, décors, eau, ciel, icônes, portraits, illustrations
+  art/              générateurs 2D : icônes, portraits, illustrations de l'intro, paramètres de dessin des poissons
   audio/            synthèse des effets, musique générative, ambiances
   i18n/fr.json      textes de l'interface
 tests/              tests unitaires (Vitest)
@@ -62,11 +64,18 @@ e2e/                tests de bout en bout (Playwright)
 scripts/            simulation, icônes, captures, gabarit du service worker
 ```
 
-**La logique est indépendante de Phaser.** `core/`, `systems/` et `data/` n'importent ni Phaser ni le DOM : la classe `Game` (`src/core/game.ts`) applique toutes les règles. Les scènes, l'interface HTML, les tests et la simulation passent tous par elle.
+**La logique est indépendante du rendu.** `core/`, `systems/` et `data/` n'importent ni Three.js ni le DOM : la classe `Game` (`src/core/game.ts`) applique toutes les règles. Les scènes, l'interface HTML, les tests et la simulation passent tous par elle.
 
-**Pourquoi des menus en HTML/CSS par-dessus le canvas ?** Phaser dessine ce qui bouge (mer, ciel, météo, bateau, ligne, poisson, particules) ; tout ce qui se lit (menus, listes, fiches, boutons) est en HTML/CSS. Ce choix donne gratuitement : un texte net à toutes les densités d'écran, le défilement natif des longues listes, la mise en page fluide de 360 px à la tablette, les *safe areas* via `env(safe-area-inset-*)`, la taille de texte réglable, l'accessibilité (rôles ARIA, lecteurs d'écran, focus clavier) et un style unique pour tous les écrans. Le canvas est rendu en haute définition (jusqu'à ×2,5 selon l'appareil) dans un monde logique de 390 unités de large.
+**Pourquoi Three.js et plus Phaser ?** Le cahier des charges d'origine imposait Phaser 3 (moteur 2D). La demande d'un jeu en 3D aux graphismes réalistes l'a remplacé par **Three.js 0.170.0** (épinglé), qui dessine les trois scènes dans un seul canvas WebGL. Les règles du jeu, les écrans et les tests n'ont pas changé.
 
-**Rendu des poissons.** `src/art/fish.ts` construit un SVG à partir des paramètres de chaque espèce (forme du corps, allongement, queue, dorsale, motif, trois couleurs, taille de l'œil, attribut spécial). Les variantes (albinos, mélanique, doré, chatoyant) changent la palette et ajoutent un effet. Au démarrage, la scène Preload transforme chaque SVG en texture Phaser : la barre de chargement suit ce travail réel.
+**Pourquoi des menus en HTML/CSS par-dessus le canvas ?** Le moteur 3D dessine le monde ; tout ce qui se lit (menus, listes, fiches, boutons) est en HTML/CSS : texte net à toutes les densités d'écran, défilement natif, mise en page fluide de 360 px à la tablette, *safe areas*, taille de texte réglable, accessibilité, et un style unique. Au port, les boutons HTML sont accrochés aux lieux 3D qu'ils ouvrent (projection à chaque image).
+
+**Rendu 3D (`src/three/`).**
+- *Ciel* (`sky.ts`) : un shader calcule dégradé atmosphérique, disque et halo du soleil, lune, étoiles et nuages éclairés (bruit fractal) selon l'heure et la météo ; brouillard, pluie et éclairs s'y ajoutent. Le même ciel sert de carte d'environnement pour les reflets des objets.
+- *Eau* (`water.ts`) : houle par somme de vagues (la même formule fait flotter le bateau et le bouchon), rides, reflet du ciel par effet de Fresnel, scintillement du soleil et de la lune, écume, transparence, bioluminescence de la marée luisante et de la Fosse.
+- *Relief* (`terrain.ts`, `zones3d.ts`) : chaque zone a son paysage généré (caps et phare, berges boisées, montagnes enneigées, îlots à palmiers, pics de la Fosse).
+- *Poissons* (`fishMesh.ts`) : chaque espèce est modélisée à partir de ses paramètres (corps par sections, nageoires, yeux, barbillons, rostre, leurre lumineux…), avec une peau texturée (contre-ombrage, motif, écailles) et un matériau humide et brillant. Les variantes changent la peau (dorée métallique, irisée…). Le même modèle sert en jeu (saut, sortie de l'eau) et pour les images du carnet, photographiées dans un petit studio 3D.
+- *Performance* : ombres portées, tone mapping filmique, résolution limitée à ×2 et **abaissée automatiquement** si l'appareil ne tient pas la cadence.
 
 **Son.** `src/audio/engine.ts` synthétise tout : effets (lancer, plouf, touche, moulinet, fil tendu, casse, prise, prise rare, pièces, clic, page…), musique générative pentatonique qui dépend de la zone et de l'heure, ambiances (vagues, vent, pluie, mouettes, grillons, gouttes et grondement dans la Fosse). Trois volumes séparés plus les vibrations.
 
@@ -142,7 +151,7 @@ npx cap open ios           # ouvre Xcode → Product > Archive
 
 | Vérification | Résultat |
 | --- | --- |
-| `npm run build` | sans erreur ; JS ≈ 420 Ko gzip au total (dont Phaser ≈ 332 Ko), bien sous la limite de 2 Mo |
+| `npm run build` | sans erreur ; JS ≈ 230 Ko gzip au total (dont Three.js ≈ 134 Ko), bien sous la limite de 2 Mo |
 | `npm test` | 71 tests unitaires verts |
 | `npm run test:e2e` | 4 scénarios verts : nouvelle partie → intro → tutoriel → premier poisson (≈ 25 s) → vente → appât → rechargement ; sauvegarde corrompue → copie de secours ; histoire complète en mode debug jusqu’à la Veilleuse et l’écran de fin ; jeu rechargé hors ligne grâce au service worker |
 | `npm run lint` | ESLint + Prettier sans erreur |
@@ -151,7 +160,8 @@ npx cap open ios           # ouvre Xcode → Product > Archive
 ### Limites connues
 
 - Dans Chromium *headless* (rendu WebGL logiciel), le pilote GL écrit des avertissements « GPU stall due to ReadPixels » ; ils ne viennent pas du code du jeu et n'apparaissent pas sur un appareil réel.
-- Les performances (60 i/s) ont été pensées pour un téléphone milieu de gamme (rendu limité à ×2,5, géométrie redessinée simplement), mais n'ont été mesurées que sur ordinateur.
+- Le rendu 3D est plus exigeant que la version 2D d'origine. La résolution s'adapte toute seule, mais les performances n'ont été vérifiées que dans un navigateur sans carte graphique (rendu logiciel, donc lent) : un essai sur de vrais téléphones reste à faire.
+- « Réaliste » a ici une limite assumée : sans aucune image ni modèle importé, les arbres, bâtiments et rochers restent stylisés ; l'eau, le ciel, la lumière et les poissons portent l'essentiel du réalisme.
 - Seul le français est fourni.
 - L'export de sauvegarde utilise le presse-papiers ; s'il est refusé, le code reste sélectionnable à la main.
 

@@ -73,7 +73,7 @@ export function creditsScreen(): Screen {
       h(
         'ul',
         null,
-        h('li', null, 'Phaser 3 (licence MIT)'),
+        h('li', null, 'Three.js (licence MIT) pour le rendu 3D'),
         h('li', null, 'TypeScript, Vite, Vitest, Playwright'),
         h('li', null, 'Capacitor (licence MIT) pour iOS et Android'),
         h('li', null, 'Web Audio API : tous les sons sont synthétisés en direct'),
