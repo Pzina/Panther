@@ -3,7 +3,8 @@ import { app } from '../../app';
 import { getBoat, getCosmetic } from '../../data/equipment';
 import { getZone } from '../../data/zones';
 import { fbm } from '../noise';
-import { box, makeBoat, makeHouse, makeLighthouse } from '../props';
+import { moveInput, resetMove } from '../../ui/joystick';
+import { box, makeBoat, makeCharacter, makeHouse, makeLighthouse, type Character } from '../props';
 import { Environment } from '../sky';
 import { Stage, View } from '../stage';
 import { landMesh, scatterTrees, type HeightFn } from '../terrain';
@@ -24,7 +25,14 @@ export class PortView extends View {
   private others: THREE.Group[] = [];
   private lamps: THREE.PointLight[] = [];
   private glowMats: THREE.MeshStandardMaterial[] = [];
-  private anchors: { id: string; pos: THREE.Vector3 }[] = [];
+  private anchors: { id: string; pos: THREE.Vector3; near: THREE.Vector3 }[] = [];
+  private hero!: Character;
+  private heroPos = new THREE.Vector3(0, 1.2, 5);
+  private heroYaw = Math.PI;
+  private landHeight!: HeightFn;
+  private obstacles: { x: number; z: number; r: number }[] = [];
+  private camPos = new THREE.Vector3(0, 12, 27);
+  private camLook = new THREE.Vector3(0, 4.4, -3);
   private t = 0;
   private lastKey = '';
 
@@ -54,6 +62,7 @@ export class PortView extends View {
       const far = smooth(-30, -90, z) * (6 + n * 26);
       return -2.2 + inland * (3.1 + n * 1.2 + hill + far) + cape * (0.6 + n);
     };
+    this.landHeight = height;
     this.scene.add(
       landMesh(-120, 120, -140, 12, 140, 90, height, { sand: 0xd8c79a, grass: 0x5d8a4c, rock: 0x7b756a }),
     );
@@ -77,6 +86,11 @@ export class PortView extends View {
       bollard.castShadow = true;
       this.scene.add(bollard);
     }
+
+    // Gangway linking the quay to the island.
+    this.scene.add(box(2.4, 0.25, 4.6, wood, 2.2, 1.07, -0.2));
+    for (const z of [-2.2, 0.4])
+      for (const x of [1.15, 3.25]) this.scene.add(box(0.26, 3, 0.26, darkWood, x, -0.2, z));
 
     // Jo's stall.
     const stall = new THREE.Group();
@@ -245,14 +259,29 @@ export class PortView extends View {
     }
 
     this.anchors = [
-      { id: 'spot-cabin', pos: cabinPos.clone().add(new THREE.Vector3(0, 5.2, 0)) },
-      { id: 'spot-shop', pos: new THREE.Vector3(-4.3, 4.6, 3.4) },
-      { id: 'spot-missions', pos: new THREE.Vector3(0, 4.4, 2.9) },
-      { id: 'spot-map', pos: new THREE.Vector3(4.3, 4.6, 3.5) },
+      {
+        id: 'spot-cabin',
+        pos: cabinPos.clone().add(new THREE.Vector3(0, 5.2, 0)),
+        near: cabinPos.clone().add(new THREE.Vector3(0.6, 0, 2.6)),
+      },
+      { id: 'spot-shop', pos: new THREE.Vector3(-4.3, 4.6, 3.4), near: new THREE.Vector3(-4.3, 1.2, 5.2) },
+      { id: 'spot-missions', pos: new THREE.Vector3(0, 4.4, 2.9), near: new THREE.Vector3(0, 1.2, 4.2) },
+      { id: 'spot-map', pos: new THREE.Vector3(4.3, 4.6, 3.5), near: new THREE.Vector3(4.3, 1.2, 5.2) },
     ];
+    this.obstacles = [
+      { x: -4.3, z: 3.3, r: 1.9 },
+      { x: 0, z: 2.9, r: 1.1 },
+      { x: 4.3, z: 3.5, r: 1.4 },
+      { x: cabinPos.x, z: cabinPos.z, r: 3 },
+      { x: 4.5, z: -7, r: 2.5 },
+      { x: 8.5, z: -10, r: 2.5 },
+    ];
+    // The player, free to walk on the quay and on the island.
+    this.hero = makeCharacter(getCosmetic(game.state.cosmetics.outfit));
+    this.scene.add(this.hero.group);
     this.camera.fov = 58;
-    this.camera.position.set(0, 12, 27);
-    this.camera.lookAt(0, 4.4, -3);
+    this.camera.position.copy(this.camPos);
+    this.camera.lookAt(this.camLook);
     this.syncSound();
   }
 
@@ -274,6 +303,72 @@ export class PortView extends View {
     app.ui.root.classList.toggle('night', game.phase('anse') === 'night');
   }
 
+  /** Ground height where the player can stand, or null when the spot is not walkable. */
+  private ground(x: number, z: number): number | null {
+    if (Math.abs(x) <= 7.8 && z >= 1.9 && z <= 6.5) return 1.2;
+    // Gangway from the quay to the shore.
+    if (x >= 1.1 && x <= 3.3 && z >= -2.2 && z < 1.9) return 1.2;
+    if (Math.abs(x) > 17 || z < -26 || z > 2.4) return null;
+    const h = this.landHeight(x, z);
+    return h > 0.9 ? h : null;
+  }
+
+  private moveHero(dt: number): void {
+    const speed = Math.min(1, Math.hypot(moveInput.x, moveInput.y));
+    if (speed > 0.08) {
+      const step = 4.2 * dt;
+      let nx = this.heroPos.x + moveInput.x * step;
+      let nz = this.heroPos.z - moveInput.y * step;
+      for (const o of this.obstacles) {
+        const d = Math.hypot(nx - o.x, nz - o.z);
+        if (d < o.r && d > 1e-4) {
+          nx = o.x + ((nx - o.x) / d) * o.r;
+          nz = o.z + ((nz - o.z) / d) * o.r;
+        }
+      }
+      // Slide along the edges: try the full move, then each axis alone.
+      for (const [tx, tz] of [
+        [nx, nz],
+        [nx, this.heroPos.z],
+        [this.heroPos.x, nz],
+      ] as const) {
+        const g = this.ground(tx, tz);
+        if (g !== null && g - this.heroPos.y < 0.9) {
+          this.heroPos.x = tx;
+          this.heroPos.z = tz;
+          break;
+        }
+      }
+      const target = Math.atan2(-moveInput.x, moveInput.y);
+      let diff = target - this.heroYaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this.heroYaw += diff * Math.min(1, dt * 12);
+    }
+    const g = this.ground(this.heroPos.x, this.heroPos.z) ?? this.heroPos.y;
+    this.heroPos.y += (g - this.heroPos.y) * Math.min(1, dt * 12);
+    this.hero.group.position.copy(this.heroPos);
+    this.hero.group.rotation.y = this.heroYaw;
+    this.hero.animate(dt, speed > 0.08 ? speed : 0);
+
+    // Third-person camera following the player.
+    const follow = Math.min(1, dt * 4);
+    this.camPos.lerp(
+      new THREE.Vector3(this.heroPos.x * 0.85, this.heroPos.y + 9.5, this.heroPos.z + 19),
+      follow,
+    );
+    this.camLook.lerp(
+      new THREE.Vector3(this.heroPos.x * 0.85, this.heroPos.y + 2.4, this.heroPos.z - 6),
+      follow,
+    );
+    this.camera.position.copy(this.camPos);
+    this.camera.lookAt(this.camLook);
+  }
+
+  override paused(): void {
+    resetMove();
+  }
+
   private float(obj: THREE.Group, x: number, z: number, calm: number): void {
     obj.position.set(x, this.water.height(x, z) * 0.8 - 0.1, z);
     obj.rotation.z = (this.water.height(x + 1, z) - this.water.height(x - 1, z)) * 0.4 * calm;
@@ -292,6 +387,7 @@ export class PortView extends View {
     );
     this.env.update(dt, this.camera, this.stage.renderer);
     this.syncSound();
+    this.moveHero(dt);
     const calm = game.state.settings.reducedMotion ? 0.3 : 1;
     this.float(this.boat, 0, 11.5, calm);
     this.others.forEach((o, i) => this.float(o, i === 0 ? -5.5 : 6, i === 0 ? 10 : 9.5, calm));
@@ -305,12 +401,26 @@ export class PortView extends View {
       const el = document.getElementById(anchor.id);
       if (!el) continue;
       v.copy(anchor.pos).project(this.camera);
-      el.style.left = `${Math.min(86, Math.max(14, (v.x * 0.5 + 0.5) * 100)).toFixed(1)}%`;
-      el.style.top = `${Math.min(62, Math.max(27, (-v.y * 0.5 + 0.5) * 100)).toFixed(1)}%`;
+      const sx = (v.x * 0.5 + 0.5) * 100;
+      const sy = (-v.y * 0.5 + 0.5) * 100;
+      // A place that left the view has no button: walk back to it.
+      const visible = v.z < 1 && sx > 6 && sx < 94 && sy > 20 && sy < 70;
+      el.style.display = visible ? '' : 'none';
+      el.style.left = `${Math.min(86, Math.max(14, sx)).toFixed(1)}%`;
+      el.style.top = `${Math.min(62, Math.max(27, sy)).toFixed(1)}%`;
+      el.classList.toggle(
+        'is-near',
+        Math.hypot(anchor.near.x - this.heroPos.x, anchor.near.z - this.heroPos.z) < 3.2,
+      );
     }
+    // Standing at the edge of the quay, next to the boat: the "go fishing" button lights up.
+    document
+      .getElementById('btn-fish')
+      ?.classList.toggle('is-near', this.heroPos.z > 5.6 && Math.abs(this.heroPos.x) < 3.5);
   }
 
   override dispose(): void {
+    resetMove();
     this.env.dispose();
     this.water.dispose();
     super.dispose();

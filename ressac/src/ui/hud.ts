@@ -11,6 +11,7 @@ import { getZone } from '../data/zones';
 import type { FightModel } from '../systems/fight';
 import { collectionPercent, xpToNext } from '../systems/progression';
 import { button, clear, h, icon, iconButton, progress } from './dom';
+import { joystick } from './joystick';
 import type { Hud } from './ui';
 import { coinTag, nameOf } from './widgets';
 
@@ -163,6 +164,7 @@ export class HomeHud implements Hud {
 
 export class PortHud implements Hud {
   el = h('div', { class: 'hud port-hud', id: 'port-hud' });
+  private stick = joystick(t('hud.move'));
   private timer: ReturnType<typeof setInterval>;
 
   constructor() {
@@ -207,8 +209,11 @@ export class PortHud implements Hud {
         h('span', null, label),
         badge ? h('i', { class: 'badge-dot' }) : null,
       );
-    clear(this.el);
-    this.el.append(
+    // The joystick stays in place: removing it would interrupt a gesture in progress.
+    for (const child of [...this.el.children]) if (child !== this.stick) child.remove();
+    if (!this.stick.parentElement) this.el.append(this.stick);
+    const content = document.createDocumentFragment();
+    content.append(
       h(
         'div',
         { class: 'hud-top' },
@@ -326,6 +331,7 @@ export class PortHud implements Hud {
           ]
         : []),
     );
+    this.el.insertBefore(content, this.stick);
   }
 }
 
@@ -408,6 +414,7 @@ export class FishingHud implements Hud {
       this.fightBox,
       this.powerBox,
       this.prompt,
+      joystick(t('hud.move')),
       this.bottom,
     );
     this.refresh();

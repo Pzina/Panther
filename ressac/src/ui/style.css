@@ -2401,3 +2401,54 @@ body.reduced-motion .prompt-alert {
 #app.night .fish-art.is-unknown img {
   filter: brightness(0) invert(0.75) opacity(0.6);
 }
+
+/* ───────── Movement joystick ───────── */
+.joystick {
+  position: absolute;
+  left: calc(var(--safe-left) + 14px);
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: rgba(15, 42, 61, 0.42);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  pointer-events: auto;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.left-handed .joystick {
+  left: auto;
+  right: calc(var(--safe-right) + 14px);
+}
+.joystick-knob {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(251, 245, 230, 0.92);
+  border: 2px solid var(--ink);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.port-hud .joystick {
+  bottom: calc(var(--safe-bottom) + 152px);
+}
+.fishing-hud .joystick {
+  bottom: calc(var(--safe-bottom) + 66px);
+}
+.fishing-hud:not([data-state='idle']):not([data-state='waiting']) .joystick {
+  opacity: 0.25;
+  pointer-events: none;
+}
+.fishing-hud .prompt {
+  bottom: calc(var(--safe-bottom) + 196px);
+}
+.spot.is-near {
+  background: #f6c453;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.btn.is-near {
+  box-shadow:
+    var(--shadow),
+    0 0 0 5px rgba(246, 196, 83, 0.9);
+}

@@ -10,6 +10,7 @@ import { getZone } from '../../data/zones';
 import { FightModel } from '../../systems/fight';
 import { rarityRank } from '../../systems/fishing';
 import type { FishingHud } from '../../ui/hud';
+import { moveInput, resetMove } from '../../ui/joystick';
 import { showCatchCard } from '../../ui/screens/catchCard';
 import { buildFish } from '../fishMesh';
 import { makeBoat, makeBobber } from '../props';
@@ -108,6 +109,8 @@ export class FishingView extends View {
   private rodTip = new THREE.Vector3();
   private landing: { from: THREE.Vector3; t: number; duration: number } | null = null;
   private timers: { at: number; fn: () => void }[] = [];
+  /** Where the player stands on the deck (metres from the default spot). */
+  private deck = { x: 0, z: 0, step: 0 };
 
   constructor(stage: Stage) {
     super(stage);
@@ -424,6 +427,7 @@ export class FishingView extends View {
   }
 
   override paused(): void {
+    resetMove();
     this.holding = false;
     app.audio.setTension(0);
   }
@@ -913,8 +917,17 @@ export class FishingView extends View {
     const roll = (this.water.height(1, 0) - this.water.height(-1, 0)) * 0.3 * calm;
     this.boat.position.set(0, wy * 0.7 - 0.2, 0);
     this.boat.rotation.set(pitch, 0, roll);
-    this.camera.position.set(0, 2.25 + wy * 0.5 * calm, 3.1);
-    this.camera.lookAt(0, 0.7, -16);
+    // Walking on the deck (joystick or keyboard), while not casting or fighting.
+    const moving =
+      (this.state === 'idle' || this.state === 'waiting') && Math.hypot(moveInput.x, moveInput.y) > 0.08;
+    if (moving) {
+      this.deck.x = THREE.MathUtils.clamp(this.deck.x + moveInput.x * 1.3 * dt, -0.6, 0.6);
+      this.deck.z = THREE.MathUtils.clamp(this.deck.z - moveInput.y * 1.3 * dt, -1.7, 0.4);
+      this.deck.step += dt * 9;
+    }
+    const stepBob = moving ? Math.abs(Math.sin(this.deck.step)) * 0.035 * calm : 0;
+    this.camera.position.set(this.deck.x, 2.25 + wy * 0.5 * calm + stepBob, 3.1 + this.deck.z);
+    this.camera.lookAt(this.deck.x * 0.7, 0.7, -16);
     this.camera.rotation.z += roll * 0.25;
     const dark = this.env.darkness;
     this.lantern.intensity = dark > 0.3 ? (dark - 0.3) * 26 : 0;
@@ -941,6 +954,10 @@ export class FishingView extends View {
     } else if (this.bob.visible) {
       tip.x += this.bob.x * 0.03;
     }
+    hand.x += this.deck.x;
+    hand.z += this.deck.z;
+    tip.x += this.deck.x;
+    tip.z += this.deck.z;
     this.rodTip.lerp(tip, this.state === 'idle' ? Math.min(1, dt * 8) : 1);
     const mid = hand
       .clone()
@@ -1069,6 +1086,7 @@ export class FishingView extends View {
   }
 
   override dispose(): void {
+    resetMove();
     app.audio.setTension(0);
     app.ui.busy = false;
     this.env.dispose();

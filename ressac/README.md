@@ -70,6 +70,8 @@ scripts/            simulation, icônes, captures, gabarit du service worker
 
 **Pourquoi des menus en HTML/CSS par-dessus le canvas ?** Le moteur 3D dessine le monde ; tout ce qui se lit (menus, listes, fiches, boutons) est en HTML/CSS : texte net à toutes les densités d'écran, défilement natif, mise en page fluide de 360 px à la tablette, *safe areas*, taille de texte réglable, accessibilité, et un style unique. Au port, les boutons HTML sont accrochés aux lieux 3D qu'ils ouvrent (projection à chaque image).
 
+**Déplacement du personnage.** Un joystick tactile (`src/ui/joystick.ts`, flèches ou ZQSD au clavier) déplace le joueur : au port, il marche librement sur le quai, la passerelle et l'île, la caméra le suit et le bouton d'un lieu s'illumine quand il s'en approche ; en pêche, il se déplace sur le pont de la barque. Le personnage actuel est généré par le code (`makeCharacter` dans `src/three/props.ts`) en attendant un modèle fourni.
+
 **Rendu 3D (`src/three/`).**
 - *Ciel* (`sky.ts`) : un shader calcule dégradé atmosphérique, disque et halo du soleil, lune, étoiles et nuages éclairés (bruit fractal) selon l'heure et la météo ; brouillard, pluie et éclairs s'y ajoutent. Le même ciel sert de carte d'environnement pour les reflets des objets.
 - *Eau* (`water.ts`) : houle par somme de vagues (la même formule fait flotter le bateau et le bouchon), rides, reflet du ciel par effet de Fresnel, scintillement du soleil et de la lune, écume, transparence, bioluminescence de la marée luisante et de la Fosse.

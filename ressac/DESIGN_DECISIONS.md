@@ -46,3 +46,4 @@ Choix faits pendant la réalisation, quand le cahier des charges laissait la que
 30. **Thème de nuit automatique** des écrans quand il fait nuit dans la zone affichée (le carnet garde son papier clair).
 31. **Personnages** : Jo à la boutique, Nell à la carte, Hervé pour le tutoriel, les missions et les défis ; le carnet de Maëlle parle avec ses pages.
 32. **Transitions** : vague qui recouvre l'écran entre l'accueil, le port et la pêche ; simple fondu en mode « animations réduites ».
+33. **Déplacement** : joystick à gauche (à droite en mode gaucher), actif au port et, en pêche, seulement quand on ne lance pas et qu'on ne combat pas. Au port, les boutons des lieux restent utilisables à distance tant que le lieu est à l'écran (accessibilité) ; ils disparaissent quand il sort du champ. Collisions simples (cercles) autour des bâtiments, eau infranchissable.
