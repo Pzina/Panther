@@ -3,8 +3,11 @@ import { app } from '../../app';
 import { getBoat, getCosmetic } from '../../data/equipment';
 import { getZone } from '../../data/zones';
 import { fbm } from '../noise';
-import { moveInput, resetMove } from '../../ui/joystick';
-import { box, makeBoat, makeCharacter, makeHouse, makeLighthouse, type Character } from '../props';
+import { lookInput, moveInput, resetMove } from '../../ui/joystick';
+import { cloneModel } from '../assets';
+import { CameraRig, type RigLimits } from '../cameraRig';
+import { makeHero, makePlayerBoat } from '../hero';
+import { box, makeBoat, makeHouse, makeLighthouse, type Character } from '../props';
 import { Environment } from '../sky';
 import { Stage, View } from '../stage';
 import { landMesh, scatterTrees, type HeightFn } from '../terrain';
@@ -28,11 +31,13 @@ export class PortView extends View {
   private anchors: { id: string; pos: THREE.Vector3; near: THREE.Vector3 }[] = [];
   private hero!: Character;
   private heroPos = new THREE.Vector3(0, 1.2, 5);
-  private heroYaw = Math.PI;
+  private heroYaw = 0;
   private landHeight!: HeightFn;
   private obstacles: { x: number; z: number; r: number }[] = [];
-  private camPos = new THREE.Vector3(0, 12, 27);
-  private camLook = new THREE.Vector3(0, 4.4, -3);
+  private rig = new CameraRig();
+  private dock: THREE.Object3D | null = null;
+  private ray = new THREE.Raycaster();
+  override dragLook = true;
   private t = 0;
   private lastKey = '';
 
@@ -72,19 +77,35 @@ export class PortView extends View {
 
     const wood = new THREE.MeshStandardMaterial({ map: woodTexture('#9a7448', 3), roughness: 0.85 });
     const darkWood = new THREE.MeshStandardMaterial({ map: woodTexture('#5f4226', 1), roughness: 0.9 });
-    // Quay: deck, posts, bollards.
-    this.scene.add(box(16, 0.3, 5, wood, 0, 1.05, 4.2));
-    for (let x = -7.5; x <= 7.5; x += 3) {
-      for (const z of [2.2, 6.3]) this.scene.add(box(0.36, 3.4, 0.36, darkWood, x, -0.3, z));
-    }
-    for (const x of [-5.5, 0, 5.5]) {
-      const bollard = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.16, 0.2, 0.5, 10),
-        new THREE.MeshStandardMaterial({ color: 0x1d2a36, roughness: 0.5, metalness: 0.5 }),
-      );
-      bollard.position.set(x, 1.45, 6.2);
-      bollard.castShadow = true;
-      this.scene.add(bollard);
+    // Quay: the supplied wooden dock (turned so that it runs along the shore), or generated planks.
+    const dock = cloneModel('dock');
+    if (dock) {
+      dock.rotation.y = Math.PI / 2;
+      dock.scale.setScalar(0.72);
+      dock.position.set(0, 0, 4.2);
+      this.scene.add(dock);
+      dock.updateMatrixWorld(true);
+      // Find the deck height and bring it to the level of the stalls.
+      this.ray.set(new THREE.Vector3(0.4, 30, 4.2), new THREE.Vector3(0, -1, 0));
+      const hits = this.ray.intersectObject(dock, true).filter((hit) => (hit.face?.normal.y ?? 0) > 0.3);
+      const deck = hits.length > 0 ? Math.min(...hits.slice(0, 2).map((hit) => hit.point.y)) : 0;
+      dock.position.y = 1.2 - deck;
+      dock.updateMatrixWorld(true);
+      this.dock = dock;
+    } else {
+      this.scene.add(box(16, 0.3, 5, wood, 0, 1.05, 4.2));
+      for (let x = -7.5; x <= 7.5; x += 3) {
+        for (const z of [2.2, 6.3]) this.scene.add(box(0.36, 3.4, 0.36, darkWood, x, -0.3, z));
+      }
+      for (const x of [-5.5, 0, 5.5]) {
+        const bollard = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.16, 0.2, 0.5, 10),
+          new THREE.MeshStandardMaterial({ color: 0x1d2a36, roughness: 0.5, metalness: 0.5 }),
+        );
+        bollard.position.set(x, 1.45, 6.2);
+        bollard.castShadow = true;
+        this.scene.add(bollard);
+      }
     }
 
     // Gangway linking the quay to the island.
@@ -277,11 +298,10 @@ export class PortView extends View {
       { x: 8.5, z: -10, r: 2.5 },
     ];
     // The player, free to walk on the quay and on the island.
-    this.hero = makeCharacter(getCosmetic(game.state.cosmetics.outfit));
+    this.hero = makeHero(getCosmetic(game.state.cosmetics.outfit));
     this.scene.add(this.hero.group);
     this.camera.fov = 58;
-    this.camera.position.copy(this.camPos);
-    this.camera.lookAt(this.camLook);
+    this.rig.pitch = -0.4;
     this.syncSound();
   }
 
@@ -289,7 +309,10 @@ export class PortView extends View {
   refreshBoat(): void {
     const state = app.game.state;
     if (this.boat) this.scene.remove(this.boat);
-    this.boat = makeBoat(getCosmetic(state.cosmetics.boatColor), getBoat(state.equipment.boat).tier);
+    this.boat = makePlayerBoat(
+      getCosmetic(state.cosmetics.boatColor),
+      getBoat(state.equipment.boat).tier,
+    ).group;
     this.boat.rotation.y = Math.PI / 2 + 0.15;
     this.scene.add(this.boat);
   }
@@ -303,22 +326,40 @@ export class PortView extends View {
     app.ui.root.classList.toggle('night', game.phase('anse') === 'night');
   }
 
+  private static readonly LIMITS: RigLimits = { minPitch: -1.1, maxPitch: 0.5, distance: 17, lift: 0.8 };
+
   /** Ground height where the player can stand, or null when the spot is not walkable. */
   private ground(x: number, z: number): number | null {
-    if (Math.abs(x) <= 7.8 && z >= 1.9 && z <= 6.5) return 1.2;
+    if (this.dock) {
+      // The supplied dock: stand where a plank is under the feet (posts and gaps are not walkable).
+      if (Math.abs(x) <= 13.2 && z >= 0.2 && z <= 8.4) {
+        this.ray.set(new THREE.Vector3(x, 12, z), new THREE.Vector3(0, -1, 0));
+        const hit = this.ray.intersectObject(this.dock, true)[0];
+        if (hit && Math.abs(hit.point.y - 1.2) < 0.5) return hit.point.y;
+      }
+    } else if (Math.abs(x) <= 7.8 && z >= 1.9 && z <= 6.5) return 1.2;
     // Gangway from the quay to the shore.
-    if (x >= 1.1 && x <= 3.3 && z >= -2.2 && z < 1.9) return 1.2;
+    if (x >= 1.1 && x <= 3.3 && z >= -2.2 && z < 2.4) return 1.2;
     if (Math.abs(x) > 17 || z < -26 || z > 2.4) return null;
     const h = this.landHeight(x, z);
     return h > 0.9 ? h : null;
   }
 
   private moveHero(dt: number): void {
+    const third = app.game.state.settings.thirdPerson;
+    this.rig.mode = third ? 'third' : 'first';
+    this.rig.look(lookInput.dx, lookInput.dy, PortView.LIMITS);
+    lookInput.dx = 0;
+    lookInput.dy = 0;
     const speed = Math.min(1, Math.hypot(moveInput.x, moveInput.y));
     if (speed > 0.08) {
-      const step = 4.2 * dt;
-      let nx = this.heroPos.x + moveInput.x * step;
-      let nz = this.heroPos.z - moveInput.y * step;
+      // The stick is relative to where the camera looks.
+      const yaw = this.rig.yaw;
+      const mx = moveInput.x * Math.cos(yaw) - moveInput.y * Math.sin(yaw);
+      const mz = -moveInput.x * Math.sin(yaw) - moveInput.y * Math.cos(yaw);
+      const step = (speed > 0.9 ? 5.2 : 3.2) * dt;
+      let nx = this.heroPos.x + mx * step;
+      let nz = this.heroPos.z + mz * step;
       for (const o of this.obstacles) {
         const d = Math.hypot(nx - o.x, nz - o.z);
         if (d < o.r && d > 1e-4) {
@@ -339,7 +380,7 @@ export class PortView extends View {
           break;
         }
       }
-      const target = Math.atan2(-moveInput.x, moveInput.y);
+      const target = Math.atan2(-mx, -mz);
       let diff = target - this.heroYaw;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
@@ -348,21 +389,11 @@ export class PortView extends View {
     const g = this.ground(this.heroPos.x, this.heroPos.z) ?? this.heroPos.y;
     this.heroPos.y += (g - this.heroPos.y) * Math.min(1, dt * 12);
     this.hero.group.position.copy(this.heroPos);
-    this.hero.group.rotation.y = this.heroYaw;
+    this.hero.group.rotation.y = third ? this.heroYaw : this.rig.yaw;
+    this.hero.group.visible = third;
     this.hero.animate(dt, speed > 0.08 ? speed : 0);
-
-    // Third-person camera following the player.
-    const follow = Math.min(1, dt * 4);
-    this.camPos.lerp(
-      new THREE.Vector3(this.heroPos.x * 0.85, this.heroPos.y + 9.5, this.heroPos.z + 19),
-      follow,
-    );
-    this.camLook.lerp(
-      new THREE.Vector3(this.heroPos.x * 0.85, this.heroPos.y + 2.4, this.heroPos.z - 6),
-      follow,
-    );
-    this.camera.position.copy(this.camPos);
-    this.camera.lookAt(this.camLook);
+    const head = new THREE.Vector3(this.heroPos.x, this.heroPos.y + 1.62, this.heroPos.z);
+    this.rig.apply(this.camera, head, 0, PortView.LIMITS, dt);
   }
 
   override paused(): void {

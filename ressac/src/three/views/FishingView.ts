@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { app } from '../../app';
 import { BALANCE } from '../../config/balance';
 import type { BitePlan } from '../../core/game';
-import { Rng } from '../../core/rng';
+import { hashSeed, Rng } from '../../core/rng';
 import { TUTORIAL_STEPS } from '../../data/dialogues';
 import { getBoat, getCosmetic } from '../../data/equipment';
 import type { Zone } from '../../data/types';
@@ -10,15 +10,18 @@ import { getZone } from '../../data/zones';
 import { FightModel } from '../../systems/fight';
 import { rarityRank } from '../../systems/fishing';
 import type { FishingHud } from '../../ui/hud';
-import { moveInput, resetMove } from '../../ui/joystick';
+import { lookInput, moveInput, resetMove } from '../../ui/joystick';
 import { showCatchCard } from '../../ui/screens/catchCard';
+import { cloneModel } from '../assets';
+import { CameraRig, type RigLimits } from '../cameraRig';
 import { buildFish } from '../fishMesh';
-import { makeBoat, makeBobber } from '../props';
+import { makeHero, makePlayerBoat, type PlayerBoat } from '../hero';
+import { makeBobber, type Character } from '../props';
 import { Environment } from '../sky';
 import { Stage, View } from '../stage';
 import { bangTexture, dotTexture, woodTexture } from '../textures';
 import { Water } from '../water';
-import { buildZoneLand } from '../zones3d';
+import { buildZoneLand, zoneHeight } from '../zones3d';
 
 export type FishingState =
   'idle' | 'charging' | 'casting' | 'waiting' | 'bite' | 'fight' | 'landing' | 'result';
@@ -38,6 +41,11 @@ interface Ripple {
   scale: number;
 }
 
+/** Where the angler stands by default, behind the middle of the boat. */
+const HERO_Z = 0.7;
+const ROD_LENGTH = 3.3;
+/** Direction of the supplied rod model, from its handle to its tip. */
+const ROD_AXIS = new THREE.Vector3(1.9, 0.62, 0).normalize();
 const NEAR_Z = -6;
 const FAR_Z = -36;
 const MAX_PARTICLES = 220;
@@ -58,7 +66,22 @@ export class FishingView extends View {
   private water: Water;
   private hud: FishingHud;
   private fx = new Rng((Date.now() & 0xfffff) + 7);
+  /** Boat frame: everything about fishing is expressed relative to the boat. */
+  private frame = new THREE.Group();
+  private playerBoat: PlayerBoat;
   private boat: THREE.Group;
+  private hero: Character;
+  private heroYaw = 0;
+  private rodModel: THREE.Object3D | null = null;
+  private camRig = new CameraRig();
+  /** Sailing mode: the stick steers the boat instead of moving the character. */
+  nav = false;
+  private boatSpeed = 0;
+  private hotspots: { x: number; z: number; marker: THREE.Group; found: boolean }[] = [];
+  private landAt: (x: number, z: number) => number;
+  private mapLand: HTMLCanvasElement | null = null;
+  private mapTimer = 0;
+  private spot: THREE.SpotLight | null = null;
   private rod: THREE.Mesh;
   private rodMat: THREE.Material;
   private line: THREE.Line;
@@ -72,7 +95,6 @@ export class FishingView extends View {
   private landed: THREE.Group | null = null;
   private landedKey = '';
   private shadows: Shadow[] = [];
-  private shoals: { group: THREE.Group; x: number; z: number; vx: number }[] = [];
   private ripples: Ripple[] = [];
   private points: THREE.Points;
   private pPos = new Float32Array(MAX_PARTICLES * 3);
@@ -104,13 +126,12 @@ export class FishingView extends View {
   private lastJerks = 0;
   private wasWarning = false;
   private jumpSplashed = false;
-  private inShoal = false;
   private lastSoundKey = '';
   private rodTip = new THREE.Vector3();
   private landing: { from: THREE.Vector3; t: number; duration: number } | null = null;
   private timers: { at: number; fn: () => void }[] = [];
   /** Where the player stands on the deck (metres from the default spot). */
-  private deck = { x: 0, z: 0, step: 0 };
+  private deck = { x: 0, z: 0, floor: 0.16 };
 
   constructor(stage: Stage) {
     super(stage);
@@ -134,17 +155,41 @@ export class FishingView extends View {
       rough: ROUGH[this.zone.gimmick] ?? 0.8,
       flow: this.zone.gimmick === 'current' ? -0.9 : 0,
     });
-    this.scene.add(this.water.mesh, buildZoneLand(this.zone.id));
+    this.scene.add(this.water.mesh, buildZoneLand(this.zone.id), this.frame);
 
     // Boat (bow towards the horizon), rod, line, bobber.
-    this.boat = makeBoat(getCosmetic(state.cosmetics.boatColor), getBoat(state.equipment.boat).tier, true);
-    this.scene.add(this.boat);
+    this.landAt = zoneHeight(this.zone.id);
+    this.playerBoat = makePlayerBoat(
+      getCosmetic(state.cosmetics.boatColor),
+      getBoat(state.equipment.boat).tier,
+      true,
+    );
+    this.boat = this.playerBoat.group;
+    this.frame.add(this.boat);
     this.lantern = new THREE.PointLight(0xffd9a0, 0, 12, 1.5);
     this.lantern.position.set(0, 1.6, 0.5);
     this.boat.add(this.lantern);
+    // Supplied searchlight at the bow: it lights the water at night.
+    const lamp = cloneModel('light');
+    if (lamp) {
+      lamp.position.set(0, (this.playerBoat.floorAt(0, -1.7) ?? 0.2) + 0.02, -1.75);
+      lamp.rotation.y = Math.PI;
+      this.boat.add(lamp);
+      this.spot = new THREE.SpotLight(0xfff0cc, 0, 60, 0.5, 0.5, 1.2);
+      this.spot.position.set(0, 0.9, -1.8);
+      this.spot.target.position.set(0, -0.5, -16);
+      this.boat.add(this.spot, this.spot.target);
+    }
+    this.hero = makeHero(getCosmetic(state.cosmetics.outfit));
+    this.frame.add(this.hero.group);
+    this.rodModel = cloneModel('rod');
+    if (this.rodModel) this.frame.add(this.rodModel);
+    this.camRig.pitch = -0.22;
+    this.buildHotspots();
     this.rodMat = new THREE.MeshStandardMaterial({ map: woodTexture('#6a4526'), roughness: 0.5 });
     this.rod = new THREE.Mesh(new THREE.BufferGeometry(), this.rodMat);
     this.rod.castShadow = true;
+    this.rod.visible = this.rodModel === null;
     this.rod.frustumCulled = false;
     const lineGeo = new THREE.BufferGeometry();
     lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(20 * 3), 3));
@@ -198,13 +243,13 @@ export class FishingView extends View {
     this.warnRing = ring(0xffe36a);
     this.fightShadow = this.shadowMesh(1);
     this.fightShadow.visible = false;
-    this.scene.add(this.rod, this.line, this.bobber, this.bang, this.marker, this.warnRing, this.fightShadow);
+    this.frame.add(this.rod, this.line, this.bobber, this.bang, this.marker, this.warnRing, this.fightShadow);
 
     // Fish under the surface, shoals, ripples, spray.
     const fosse = this.zone.gimmick === 'darkness';
     for (let i = 0; i < 7; i++) {
       const mesh: THREE.Object3D = fosse ? this.glowFish() : this.shadowMesh(this.fx.range(0.6, 1.3));
-      this.scene.add(mesh);
+      this.frame.add(mesh);
       this.shadows.push({
         mesh,
         x: this.fx.range(-18, 18),
@@ -213,16 +258,6 @@ export class FishingView extends View {
         speed: this.fx.range(0.5, 1.4),
         phase: this.fx.range(0, 6),
       });
-    }
-    if (this.zone.gimmick === 'shoals') {
-      for (const [x, z, vx] of [
-        [-5, -15, 0.35],
-        [6, -27, -0.3],
-      ] as const) {
-        const group = this.shoalGroup();
-        this.scene.add(group);
-        this.shoals.push({ group, x, z, vx });
-      }
     }
     for (let i = 0; i < 14; i++) {
       const mesh = new THREE.Mesh(
@@ -238,7 +273,7 @@ export class FishingView extends View {
       );
       mesh.rotation.x = -Math.PI / 2;
       mesh.renderOrder = 7;
-      this.scene.add(mesh);
+      this.frame.add(mesh);
       this.ripples.push({ mesh, age: 9, max: 1, scale: 1 });
     }
     const pGeo = new THREE.BufferGeometry();
@@ -258,7 +293,7 @@ export class FishingView extends View {
     );
     this.points.frustumCulled = false;
     this.points.renderOrder = 9;
-    this.scene.add(this.points);
+    this.frame.add(this.points);
 
     this.camera.fov = 64;
     this.setState('idle');
@@ -317,30 +352,89 @@ export class FishingView extends View {
     return points;
   }
 
-  private shoalGroup(): THREE.Group {
-    const group = new THREE.Group();
-    for (let i = 0; i < 12; i++) {
-      const fish = this.shadowMesh(0.32);
-      (fish.material as THREE.MeshBasicMaterial).color.setHex(i % 2 === 0 ? 0xfff2a8 : 0xffa8c8);
-      (fish.material as THREE.MeshBasicMaterial).opacity = 0.8;
-      fish.userData.a = (i / 12) * Math.PI * 2;
-      fish.userData.r = 0.8 + (i % 3) * 0.5;
-      group.add(fish);
+  /** Local (boat frame) → world, for the water height and the hot spots. */
+  private toWorld(lx: number, lz: number): { x: number; z: number } {
+    const yaw = this.frame.rotation.y;
+    const c = Math.cos(yaw);
+    const sn = Math.sin(yaw);
+    return { x: this.frame.position.x + lx * c + lz * sn, z: this.frame.position.z - lx * sn + lz * c };
+  }
+
+  /** Water height at a point given in the boat frame. */
+  private wh(lx: number, lz: number): number {
+    const w = this.toWorld(lx, lz);
+    return this.water.height(w.x, w.z);
+  }
+
+  /** Fish-rich spots scattered over the zone (new ones every in-game day): the reason to explore. */
+  private buildHotspots(): void {
+    const game = app.game;
+    const rng = new Rng(hashSeed(game.state.seed, 'hotspots', this.zone.id, game.day));
+    const reef = this.zone.gimmick === 'shoals';
+    const wanted = reef ? 6 : 4;
+    const fixed: [number, number][] = reef
+      ? [
+          [-5, -15],
+          [6, -27],
+        ]
+      : [];
+    const fosse = this.zone.gimmick === 'darkness';
+    for (let tries = 0; tries < 200 && this.hotspots.length < wanted; tries++) {
+      const preset = fixed[this.hotspots.length];
+      const a = rng.range(0, Math.PI * 2);
+      const r = rng.range(35, 135);
+      const x = preset ? preset[0] : Math.cos(a) * r;
+      const z = preset ? preset[1] : Math.sin(a) * r;
+      if (this.landAt(x, z) > -1.2) continue;
+      if (this.hotspots.some((hs) => Math.hypot(hs.x - x, hs.z - z) < 30)) continue;
+      const marker = new THREE.Group();
+      marker.position.set(x, 0, z);
+      // Gulls circling above (a glowing ring in the Fosse) and a shimmer on the water.
+      for (let i = 0; i < 3; i++) {
+        const geo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-0.9, 0, 0),
+          new THREE.Vector3(-0.35, 0.28, 0),
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(0.35, 0.28, 0),
+          new THREE.Vector3(0.9, 0, 0),
+        ]);
+        const bird = new THREE.Line(
+          geo,
+          new THREE.LineBasicMaterial({ color: fosse ? this.zone.palette.accent : 0xffffff, fog: false }),
+        );
+        bird.userData.a = (i / 3) * Math.PI * 2;
+        marker.add(bird);
+      }
+      const halo = new THREE.Mesh(
+        new THREE.RingGeometry(4.6, 5.2, 40),
+        new THREE.MeshBasicMaterial({
+          color: fosse ? this.zone.palette.accent : 0xfff2a8,
+          transparent: true,
+          opacity: 0.5,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          fog: false,
+        }),
+      );
+      halo.rotation.x = -Math.PI / 2;
+      halo.renderOrder = 7;
+      marker.add(halo);
+      this.scene.add(marker);
+      this.hotspots.push({ x, z, marker, found: false });
     }
-    const halo = new THREE.Mesh(
-      new THREE.CircleGeometry(2.6, 28),
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.1,
-        depthWrite: false,
-        fog: false,
-      }),
+  }
+
+  /** Switches between fishing and sailing (only while nothing is on the line). */
+  toggleNav(): void {
+    if (this.state !== 'idle') return;
+    this.nav = !this.nav;
+    this.dragLook = this.nav;
+    this.boatSpeed = 0;
+    resetMove();
+    this.hud.setNav(this.nav);
+    this.hud.setPrompt(
+      this.nav ? 'Naviguez avec le joystick — « Pêcher » pour jeter la ligne' : 'Maintenez pour lancer',
     );
-    halo.rotation.x = -Math.PI / 2;
-    halo.renderOrder = 6;
-    group.add(halo);
-    return group;
   }
 
   private after(seconds: number, fn: () => void): void {
@@ -410,6 +504,7 @@ export class FishingView extends View {
 
   override pointer(type: 'down' | 'up' | 'move', x: number): void {
     this.pointerX = x;
+    if (this.nav) return;
     if (type === 'down') {
       this.holding = true;
       app.audio.unlock();
@@ -469,11 +564,13 @@ export class FishingView extends View {
     this.splash(this.bob.x, this.bob.z, 14, 1);
     let luck = 0;
     let delayMult = 1;
-    this.inShoal = this.shoals.some((s) => Math.hypot(s.x - this.bob.x, s.z - this.bob.z) < 3.2);
-    if (this.inShoal) {
-      luck += 0.35;
+    const landed = this.toWorld(this.bob.x, this.bob.z);
+    const hot = this.hotspots.find((hs) => Math.hypot(hs.x - landed.x, hs.z - landed.z) < 6.5);
+    if (hot) {
+      hot.found = true;
+      luck += this.zone.gimmick === 'shoals' ? 0.35 : 0.25;
       delayMult *= 0.6;
-      app.ui.toast('Dans le banc ! Chance et touches rapides.', 'good', 'sparkle');
+      app.ui.toast('Zone poissonneuse ! Chance et touches rapides.', 'good', 'sparkle');
     }
     if (this.zone.gimmick === 'still' && this.perfect) {
       delayMult *= 0.55;
@@ -511,7 +608,7 @@ export class FishingView extends View {
     this.landed = buildFish(plan.species.art, plan.fish.variant, plan.species.id);
     this.landedKey = key;
     this.landed.visible = false;
-    this.scene.add(this.landed);
+    this.frame.add(this.landed);
   }
 
   private reelIn(): void {
@@ -659,7 +756,7 @@ export class FishingView extends View {
     if (app.game.state.settings.reducedMotion) count = Math.ceil(count / 3);
     const light = 0.35 + 0.65 * (1 - this.env.darkness);
     const color = new THREE.Color(0.85 * light, 0.93 * light, light);
-    const y = this.water.height(x, z);
+    const y = this.wh(x, z);
     for (let i = 0; i < count; i++) {
       const a = this.fx.range(0, Math.PI * 2);
       const v = this.fx.range(0.4, 2.2) * power;
@@ -860,7 +957,7 @@ export class FishingView extends View {
       const mat = r.mesh.material as THREE.MeshBasicMaterial;
       mat.opacity = r.age < r.max ? 0.55 * (1 - k) * (1 - this.env.darkness * 0.6) : 0;
       r.mesh.scale.setScalar((0.25 + 1.9 * k) * r.scale);
-      r.mesh.position.y = this.water.height(r.mesh.position.x, r.mesh.position.z) + 0.03;
+      r.mesh.position.y = this.wh(r.mesh.position.x, r.mesh.position.z) + 0.03;
     }
     for (let i = 0; i < MAX_PARTICLES; i++) {
       if (this.pLife[i]! <= 0) continue;
@@ -891,81 +988,226 @@ export class FishingView extends View {
         }
       }
       const wig = Math.sin(this.t * 4 + s.phase) * 0.12;
-      s.mesh.position.set(s.x, this.water.height(s.x, s.z) + 0.02, s.z);
+      s.mesh.position.set(s.x, this.wh(s.x, s.z) + 0.02, s.z);
       s.mesh.rotation.z = (s.dir > 0 ? Math.PI : 0) + wig;
       s.mesh.visible = this.state !== 'fight' || index !== 0;
     });
-    for (const shoal of this.shoals) {
-      shoal.x += shoal.vx * dt;
-      if (Math.abs(shoal.x) > 9) shoal.vx *= -1;
-      shoal.group.position.set(shoal.x, this.water.height(shoal.x, shoal.z) + 0.03, shoal.z);
-      for (const child of shoal.group.children) {
-        if (child.userData.a === undefined) continue;
-        const a = (child.userData.a as number) + this.t * 0.8;
-        child.position.set(Math.cos(a) * (child.userData.r as number), 0, Math.sin(a * 1.3) * 0.9);
-        child.rotation.z = -a + Math.PI / 2;
+    for (const hs of this.hotspots) {
+      const y = this.water.height(hs.x, hs.z);
+      for (const child of hs.marker.children) {
+        if (child.userData.a === undefined) {
+          child.position.y = y + 0.04;
+          child.scale.setScalar(1 + Math.sin(this.t * 1.5) * 0.06);
+          continue;
+        }
+        const a = (child.userData.a as number) + this.t * 0.55;
+        child.position.set(Math.cos(a) * 5, 7 + Math.sin(a * 2) * 0.8, Math.sin(a) * 5);
+        child.rotation.y = -a;
+        child.scale.y = 1 + Math.sin(this.t * 7 + (child.userData.a as number)) * 0.6;
       }
     }
+  }
+
+  private static readonly LIMITS: RigLimits = { minPitch: -1.0, maxPitch: 0.6, distance: 5.2, lift: 0.45 };
+
+  /** Sailing: the stick is the throttle and the helm. Land and the edge of the map stop the boat. */
+  private updateNav(dt: number): void {
+    if (!this.nav) {
+      this.boatSpeed = 0;
+      return;
+    }
+    const tier = getBoat(app.game.state.equipment.boat).tier;
+    const top = 5.5 + tier * 1.5;
+    const throttle = moveInput.y >= 0 ? moveInput.y : moveInput.y * 0.4;
+    this.boatSpeed += (throttle * top - this.boatSpeed) * Math.min(1, dt * 1.2);
+    const steer = 0.35 + Math.min(1, Math.abs(this.boatSpeed) / top) * 0.65;
+    this.frame.rotation.y -= moveInput.x * dt * 0.9 * steer * (this.boatSpeed < -0.2 ? -1 : 1);
+    const yaw = this.frame.rotation.y;
+    const nx = this.frame.position.x - Math.sin(yaw) * this.boatSpeed * dt;
+    const nz = this.frame.position.z - Math.cos(yaw) * this.boatSpeed * dt;
+    // Keep some water under the keel, a boat length ahead.
+    const bowX = nx - Math.sin(yaw) * 3 * Math.sign(this.boatSpeed || 1);
+    const bowZ = nz - Math.cos(yaw) * 3 * Math.sign(this.boatSpeed || 1);
+    const blocked = this.landAt(bowX, bowZ) > -1 || this.landAt(nx, nz) > -1 || Math.hypot(nx, nz) > 185;
+    if (blocked) {
+      if (Math.abs(this.boatSpeed) > 1.5)
+        app.ui.toast(
+          Math.hypot(nx, nz) > 185
+            ? 'Trop loin : la zone s’arrête ici.'
+            : 'Hauts-fonds : impossible d’avancer.',
+          'warn',
+          'anchor',
+        );
+      this.boatSpeed = 0;
+    } else {
+      this.frame.position.x = nx;
+      this.frame.position.z = nz;
+    }
+    // Wake behind the boat.
+    if (Math.abs(this.boatSpeed) > 1 && this.fx.chance(dt * 14))
+      this.splash(this.fx.range(-0.6, 0.6), 2.9, 3, 0.5);
+  }
+
+  /** Mini-map: coast, hot spots, the boat and its heading (north = towards the horizon at the start). */
+  private drawMap(dt: number): void {
+    this.mapTimer -= dt;
+    if (this.mapTimer > 0) return;
+    this.mapTimer = 0.25;
+    const canvas = this.hud.map;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const size = canvas.width;
+    const range = 200;
+    if (!this.mapLand) {
+      const land = document.createElement('canvas');
+      land.width = land.height = 64;
+      const lg = land.getContext('2d')!;
+      const img = lg.createImageData(64, 64);
+      const water = new THREE.Color(this.zone.palette.waterBottom);
+      const earth = new THREE.Color(this.zone.palette.land);
+      for (let j = 0; j < 64; j++) {
+        for (let i = 0; i < 64; i++) {
+          const h = this.landAt(((i + 0.5) / 64 - 0.5) * range * 2, ((j + 0.5) / 64 - 0.5) * range * 2);
+          const c = h > -0.3 ? earth : water;
+          img.data.set([c.r * 255, c.g * 255, c.b * 255, 255], (j * 64 + i) * 4);
+        }
+      }
+      lg.putImageData(img, 0, 0);
+      this.mapLand = land;
+    }
+    const px = (v: number): number => (v / (range * 2) + 0.5) * size;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.mapLand, 0, 0, size, size);
+    for (const hs of this.hotspots) {
+      ctx.fillStyle = hs.found ? '#ffe36a' : 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(px(hs.x), px(hs.z), size * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(px(this.frame.position.x), px(this.frame.position.z));
+    ctx.rotate(-this.frame.rotation.y);
+    ctx.fillStyle = '#e2543e';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = size * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.085);
+    ctx.lineTo(size * 0.05, size * 0.06);
+    ctx.lineTo(-size * 0.05, size * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** Positions the boat, camera, rod, line, bobber and fish for this frame. */
   private place(dt: number): void {
     const game = app.game;
     const calm = game.state.settings.reducedMotion ? 0.25 : 1;
-    const wy = this.water.height(0, 0);
-    const pitch = (this.water.height(0, 1.5) - this.water.height(0, -1.5)) * 0.2 * calm;
-    const roll = (this.water.height(1, 0) - this.water.height(-1, 0)) * 0.3 * calm;
-    this.boat.position.set(0, wy * 0.7 - 0.2, 0);
+    this.updateNav(dt);
+    const wy = this.wh(0, 0);
+    const pitch = (this.wh(0, 1.5) - this.wh(0, -1.5)) * 0.2 * calm;
+    const roll = (this.wh(1, 0) - this.wh(-1, 0)) * 0.3 * calm;
+    const boatY = wy * 0.7;
+    this.boat.position.set(0, boatY, 0);
     this.boat.rotation.set(pitch, 0, roll);
-    // Walking on the deck (joystick or keyboard), while not casting or fighting.
-    const moving =
-      (this.state === 'idle' || this.state === 'waiting') && Math.hypot(moveInput.x, moveInput.y) > 0.08;
+    this.water.mesh.position.set(this.frame.position.x, 0, this.frame.position.z);
+
+    // Camera look (drag while sailing, look pad, right mouse button).
+    const third = game.state.settings.thirdPerson;
+    this.camRig.mode = third ? 'third' : 'first';
+    this.camRig.look(lookInput.dx, lookInput.dy, FishingView.LIMITS);
+    lookInput.dx = 0;
+    lookInput.dy = 0;
+
+    // Walking on the deck (joystick or keyboard), while not casting, fighting or sailing.
+    const stick = Math.min(1, Math.hypot(moveInput.x, moveInput.y));
+    const moving = !this.nav && (this.state === 'idle' || this.state === 'waiting') && stick > 0.08;
     if (moving) {
-      this.deck.x = THREE.MathUtils.clamp(this.deck.x + moveInput.x * 1.3 * dt, -0.6, 0.6);
-      this.deck.z = THREE.MathUtils.clamp(this.deck.z - moveInput.y * 1.3 * dt, -1.7, 0.4);
-      this.deck.step += dt * 9;
+      const yaw = this.camRig.yaw;
+      const mx = moveInput.x * Math.cos(yaw) - moveInput.y * Math.sin(yaw);
+      const mz = -moveInput.x * Math.sin(yaw) - moveInput.y * Math.cos(yaw);
+      const nx = THREE.MathUtils.clamp(
+        this.deck.x + mx * 1.3 * dt,
+        -this.playerBoat.halfWidth,
+        this.playerBoat.halfWidth,
+      );
+      const nz = THREE.MathUtils.clamp(
+        this.deck.z + mz * 1.3 * dt,
+        -this.playerBoat.halfLength + 0.5,
+        this.playerBoat.halfLength - 0.6,
+      );
+      if (this.playerBoat.floorAt(nx, nz + HERO_Z) !== null) {
+        this.deck.x = nx;
+        this.deck.z = nz;
+      }
+      const target = Math.atan2(-mx, -mz);
+      let diff = target - this.heroYaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this.heroYaw += diff * Math.min(1, dt * 10);
+    } else {
+      // Standing still, the angler faces the water ahead.
+      this.heroYaw += (0 - this.heroYaw) * Math.min(1, dt * 5);
     }
-    const stepBob = moving ? Math.abs(Math.sin(this.deck.step)) * 0.035 * calm : 0;
-    this.camera.position.set(this.deck.x, 2.25 + wy * 0.5 * calm + stepBob, 3.1 + this.deck.z);
-    this.camera.lookAt(this.deck.x * 0.7, 0.7, -16);
-    this.camera.rotation.z += roll * 0.25;
+    const hx = this.deck.x;
+    const hz = this.deck.z + HERO_Z;
+    const floor = this.playerBoat.floorAt(hx, hz);
+    if (floor !== null) this.deck.floor += (floor - this.deck.floor) * Math.min(1, dt * 10);
+    const feet = this.deck.floor + boatY;
+    this.hero.group.position.set(hx, feet, hz);
+    this.hero.group.rotation.y = this.heroYaw;
+    this.hero.group.visible = third;
+    this.hero.animate(dt, moving ? stick * 0.6 : 0);
+    const head = this.frame.localToWorld(new THREE.Vector3(hx, feet + 1.62, hz));
+    this.camRig.apply(this.camera, head, this.frame.rotation.y, FishingView.LIMITS, dt);
     const dark = this.env.darkness;
     this.lantern.intensity = dark > 0.3 ? (dark - 0.3) * 26 : 0;
+    if (this.spot) this.spot.intensity = dark > 0.3 ? (dark - 0.3) * 220 : 0;
+    this.drawMap(dt);
 
     // Rod.
     const side = this.side;
-    const hand = new THREE.Vector3(side * 0.5, 1.15 + wy * 0.5, 2.2);
-    const tip = new THREE.Vector3(side * 0.28, 3.0 + wy * 0.5, -1.4);
+    // In first person the rod is held lower and further out, so that it does not fill the view.
+    const hand = third
+      ? new THREE.Vector3(hx + side * 0.3, feet + 1.08, hz - 0.28)
+      : new THREE.Vector3(hx + side * 0.55, feet + 1.0, hz - 0.95);
+    const off = new THREE.Vector3(-side * 0.22, 1.85, -3.6);
     let bend = 0;
     if (this.state === 'charging') {
-      tip.set(side * 0.5 - this.aim * 0.4, 3.3 + this.power * 0.5, 1.0 + this.power * 1.6);
+      off.set(-this.aim * 0.4, 2.15 + this.power * 0.5, -1.2 + this.power * 1.6);
     } else if (this.state === 'casting') {
       const k = Math.min(1, this.stateTime / 0.22);
-      tip.set(side * 0.28 + this.castTo.x * 0.06 * k, 3.4 - 1.5 * k, 2.4 - 4.6 * k);
+      off.set(-side * 0.22 + this.castTo.x * 0.06 * k, 2.25 - 1.5 * k, 0.2 - 4.6 * k);
     } else if (this.state === 'fight' && this.model) {
       bend = this.model.tension;
-      tip.x += (this.fishPos.x - tip.x) * 0.08 * (0.4 + bend);
-      tip.y -= bend * 0.7;
-      tip.z -= bend * 0.5;
+      off.x += (this.fishPos.x - hand.x) * 0.08 * (0.4 + bend);
+      off.y -= bend * 0.7;
+      off.z -= bend * 0.5;
       if (!this.model.inSafeZone) {
-        tip.x += Math.sin(this.t * 60) * 0.03;
-        tip.y += Math.cos(this.t * 53) * 0.03;
+        off.x += Math.sin(this.t * 60) * 0.03;
+        off.y += Math.cos(this.t * 53) * 0.03;
       }
     } else if (this.bob.visible) {
-      tip.x += this.bob.x * 0.03;
+      off.x += (this.bob.x - hand.x) * 0.03;
     }
-    hand.x += this.deck.x;
-    hand.z += this.deck.z;
-    tip.x += this.deck.x;
-    tip.z += this.deck.z;
+    const tip = hand.clone().addScaledVector(off.normalize(), ROD_LENGTH);
     this.rodTip.lerp(tip, this.state === 'idle' ? Math.min(1, dt * 8) : 1);
-    const mid = hand
-      .clone()
-      .lerp(this.rodTip, 0.55)
-      .add(new THREE.Vector3(0, 0.25 + bend * 0.55, bend * 0.4));
-    const curve = new THREE.QuadraticBezierCurve3(hand, mid, this.rodTip);
-    this.rod.geometry.dispose();
-    this.rod.geometry = new THREE.TubeGeometry(curve, 14, 0.028, 6);
+    if (this.rodModel) {
+      // The supplied rod: handle in the hand, pointing at the tip.
+      const dir = this.rodTip.clone().sub(hand).normalize();
+      this.rodModel.position.copy(hand).addScaledVector(dir, ROD_LENGTH * 0.5);
+      this.rodModel.quaternion.setFromUnitVectors(ROD_AXIS, dir);
+      this.rodModel.scale.setScalar(ROD_LENGTH / 2.02);
+    } else {
+      const mid = hand
+        .clone()
+        .lerp(this.rodTip, 0.55)
+        .add(new THREE.Vector3(0, 0.25 + bend * 0.55, bend * 0.4));
+      const curve = new THREE.QuadraticBezierCurve3(hand, mid, this.rodTip);
+      this.rod.geometry.dispose();
+      this.rod.geometry = new THREE.TubeGeometry(curve, 14, 0.028, 6);
+    }
 
     // Bobber and line.
     const linePos = this.line.geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -974,27 +1216,19 @@ export class FishingView extends View {
     let sag = 0.6;
     if (this.state === 'casting') {
       const k = Math.min(1, this.stateTime / 0.6);
-      const target = new THREE.Vector3(
-        this.castTo.x,
-        this.water.height(this.castTo.x, this.castTo.z),
-        this.castTo.z,
-      );
+      const target = new THREE.Vector3(this.castTo.x, this.wh(this.castTo.x, this.castTo.z), this.castTo.z);
       end = this.castFrom.clone().lerp(target, k);
       end.y += Math.sin(Math.PI * k) * (3 + 5 * this.depth);
       this.bobber.position.copy(end);
       sag = 0.2;
     } else if (this.bob.visible) {
-      const y = this.water.height(this.bob.x, this.bob.z);
+      const y = this.wh(this.bob.x, this.bob.z);
       const swell = this.zone.gimmick === 'swell' ? 2 : 1;
       const dip = this.bob.dip + Math.sin(this.t * 2.2) * 0.05 * swell;
       this.bobber.position.set(this.bob.x, y + 0.02 - dip * 0.34, this.bob.z);
       end = this.bobber.position.clone().add(new THREE.Vector3(0, 0.3, 0));
     } else if (this.state === 'fight' && this.model) {
-      end = new THREE.Vector3(
-        this.fishPos.x,
-        this.water.height(this.fishPos.x, this.fishPos.z),
-        this.fishPos.z,
-      );
+      end = new THREE.Vector3(this.fishPos.x, this.wh(this.fishPos.x, this.fishPos.z), this.fishPos.z);
       sag = 0.05 + (1 - this.model.tension) * 0.5;
       lineMat.color.setRGB(1, 1 - this.model.strain * 0.75, 1 - this.model.strain * 0.8);
     }
@@ -1015,14 +1249,16 @@ export class FishingView extends View {
     const showBobber = this.state === 'casting' || (this.bob.visible && this.bob.dip < 0.9);
     this.bobber.visible = showBobber;
     if (showBobber) {
-      const dist = this.camera.position.distanceTo(this.bobber.position);
+      const dist = this.camera.position.distanceTo(this.bobber.getWorldPosition(new THREE.Vector3()));
       this.bobber.scale.setScalar(1.2 + dist * 0.085);
       this.bobber.rotation.z = Math.sin(this.t * 1.7) * 0.08;
       (this.bobberGlow.material as THREE.SpriteMaterial).opacity = dark > 0.3 ? 0.55 : 0;
     }
     if (this.state === 'bite') {
-      const y = this.water.height(this.bob.x, this.bob.z);
-      const dist = this.camera.position.distanceTo(new THREE.Vector3(this.bob.x, y, this.bob.z));
+      const y = this.wh(this.bob.x, this.bob.z);
+      const dist = this.camera.position.distanceTo(
+        this.frame.localToWorld(new THREE.Vector3(this.bob.x, y, this.bob.z)),
+      );
       this.bang.position.set(this.bob.x, y + 0.6 + dist * 0.045, this.bob.z);
       const pop = 1 + Math.sin(this.stateTime * 24) * 0.12;
       this.bang.scale.set(0.055 * pop, 0.11 * pop, 1);
@@ -1034,7 +1270,7 @@ export class FishingView extends View {
       const target = this.landingPoint(this.power, this.aim);
       const sweet = Math.abs(this.power - BALANCE.cast.sweetSpot) <= BALANCE.cast.perfectWindow;
       (this.marker.material as THREE.MeshBasicMaterial).color.setHex(sweet ? 0x7dffa8 : 0xffffff);
-      this.marker.position.set(target.x, this.water.height(target.x, target.z) + 0.05, target.z);
+      this.marker.position.set(target.x, this.wh(target.x, target.z) + 0.05, target.z);
       this.marker.scale.setScalar(0.5 + target.depth * 1.3);
     }
 
@@ -1045,7 +1281,7 @@ export class FishingView extends View {
     this.warnRing.visible = fighting && model!.jumpWarning > 0;
     const fish = this.landed;
     if (fighting && model) {
-      const y = this.water.height(this.fishPos.x, this.fishPos.z);
+      const y = this.wh(this.fishPos.x, this.fishPos.z);
       const size = 0.9 + model.params.difficulty * 1.6;
       this.fightShadow.position.set(this.fishPos.x, y + 0.03, this.fishPos.z);
       this.fightShadow.scale.setScalar(size * 1.3);
@@ -1072,7 +1308,9 @@ export class FishingView extends View {
       this.landing.t += dt;
       const k = Math.min(1, this.landing.t / this.landing.duration);
       const e = 1 - Math.pow(1 - k, 3);
-      const target = new THREE.Vector3(0, this.camera.position.y - 0.15, this.camera.position.z - 2.3);
+      const ahead = this.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(2.3);
+      const target = this.frame.worldToLocal(this.camera.position.clone().add(ahead));
+      target.y -= 0.15;
       fish.visible = true;
       fish.position.lerpVectors(this.landing.from, target, e);
       fish.position.y += Math.sin(Math.PI * k) * 1.6;

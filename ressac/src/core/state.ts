@@ -65,6 +65,8 @@ export interface Settings {
   colorblind: boolean;
   reducedMotion: boolean;
   assist: boolean;
+  /** Camera: third person (the character is visible) or first person. */
+  thirdPerson: boolean;
   lang: string;
 }
 
@@ -124,6 +126,7 @@ export function defaultSettings(): Settings {
     colorblind: false,
     reducedMotion: false,
     assist: false,
+    thirdPerson: true,
     lang: 'fr',
   };
 }

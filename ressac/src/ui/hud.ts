@@ -11,7 +11,7 @@ import { getZone } from '../data/zones';
 import type { FightModel } from '../systems/fight';
 import { collectionPercent, xpToNext } from '../systems/progression';
 import { button, clear, h, icon, iconButton, progress } from './dom';
-import { joystick } from './joystick';
+import { joystick, lookPad } from './joystick';
 import type { Hud } from './ui';
 import { coinTag, nameOf } from './widgets';
 
@@ -66,6 +66,22 @@ function tutorialBubble(text: string): HTMLElement {
       t('hud.tutorial.skip'),
     ),
   );
+}
+
+/** Switches between the first and the third person camera. */
+export function toggleView(): void {
+  const settings = app.game.state.settings;
+  settings.thirdPerson = !settings.thirdPerson;
+  app.save();
+  app.ui.refresh();
+}
+
+function viewButton(): HTMLButtonElement {
+  const third = app.game.state.settings.thirdPerson;
+  const btn = iconButton('eye', t(third ? 'hud.view.first' : 'hud.view.third'), toggleView, 'chip-btn');
+  btn.id = 'btn-view';
+  btn.dataset.view = third ? 'third' : 'first';
+  return btn;
 }
 
 /** Marks the tutorial as finished (it can be replayed from the settings). */
@@ -231,6 +247,7 @@ export class PortHud implements Hud {
         ),
         ...statusChips('anse', true),
         h('div', { class: 'spacer' }),
+        viewButton(),
         iconButton('gear', t('port.settings'), () => app.ui.open('settings'), 'chip-btn'),
       ),
       h(
@@ -344,6 +361,16 @@ export class FishingHud implements Hud {
   private top = h('div', { class: 'hud-top' });
   private zoneLine = h('div', { class: 'zone-line' });
   private tutorialSlot = h('div', { class: 'tutorial-slot' });
+  /** Mini-map drawn by the fishing view. */
+  readonly map = h('canvas', {
+    class: 'minimap',
+    id: 'minimap',
+    width: 192,
+    height: 192,
+    'aria-hidden': 'true',
+  }) as HTMLCanvasElement;
+  private tools = h('div', { class: 'side-tools', id: 'side-tools' });
+  private navOn = false;
   private prompt = h('div', { class: 'prompt', id: 'prompt', role: 'status' });
   private hint = h('div', { class: 'fight-hint', id: 'fight-hint', role: 'status' });
   private bottom = h('div', { class: 'hud-bottom' });
@@ -414,7 +441,9 @@ export class FishingHud implements Hud {
       this.fightBox,
       this.powerBox,
       this.prompt,
+      this.tools,
       joystick(t('hud.move')),
+      lookPad(t('hud.look')),
       this.bottom,
     );
     this.refresh();
@@ -469,6 +498,7 @@ export class FishingHud implements Hud {
       ),
     );
     this.renderTutorial();
+    this.renderTools();
   }
 
   private async toPort(): Promise<void> {
@@ -521,6 +551,36 @@ export class FishingHud implements Hud {
     d.high = model.safeHigh.toFixed(3);
     d.distance = model.distance.toFixed(3);
     d.jump = model.jumpWarning > 0 || model.jumping > 0 ? '1' : '0';
+  }
+
+  /** Reflects the sailing mode on the HUD (button label, hidden fishing controls). */
+  setNav(on: boolean): void {
+    this.navOn = on;
+    this.el.dataset.nav = on ? '1' : '0';
+    this.renderTools();
+  }
+
+  private toolsKey = '';
+
+  private renderTools(): void {
+    // Rebuilt only when something changes, so that the buttons stay put between refreshes.
+    const key = `${this.navOn}-${app.game.state.settings.thirdPerson}`;
+    if (key === this.toolsKey) return;
+    this.toolsKey = key;
+    clear(this.tools);
+    const nav = h(
+      'button',
+      {
+        class: `chip chip-btn${this.navOn ? ' chip-good' : ''}`,
+        type: 'button',
+        id: 'btn-nav',
+        onclick: () =>
+          (app.stage?.scene.getScene('Fishing') as { toggleNav?: () => void } | null)?.toggleNav?.(),
+      },
+      icon(this.navOn ? 'hook' : 'compass'),
+      h('span', null, t(this.navOn ? 'hud.nav.fish' : 'hud.nav.sail')),
+    );
+    this.tools.append(this.map, h('div', { class: 'side-row' }, viewButton(), nav));
   }
 
   setTutorial(text: string | null): void {

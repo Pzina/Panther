@@ -82,8 +82,19 @@ export function creditsScreen(): Screen {
       h(
         'p',
         null,
-        'Aucune image, aucune piste audio et aucune police téléchargée : chaque poisson, décor, portrait et icône est dessiné par le code (SVG et Canvas), chaque son est synthétisé.',
+        'Les poissons, le ciel, la mer, le relief, les portraits et les icônes sont générés par le code ; tous les sons sont synthétisés. Le personnage, la barque, le ponton, la canne, les pins, le projecteur et les textures de sol sont des modèles et textures fournis, listés ci-dessous.',
       ),
+      h('h3', null, 'Modèles 3D et textures'),
+      h(
+        'ul',
+        null,
+        h('li', null, '« Old Man » par Bake3D (bake3d.ai) — licence CC BY 4.0'),
+        h('li', null, '« FishingBoat » par Godot2000 (sketchfab.com/Godot2000) — licence CC BY 4.0'),
+        h('li', null, '« Rustic Wooden Dock » par Evan16 (sketchfab.com/evan_16) — licence CC BY 4.0'),
+        h('li', null, 'Pin, projecteur portable, textures de sable et de galets : Poly Haven (polyhaven.com) — CC0'),
+        h('li', null, 'Canne à pêche : modèle fourni par l’auteur du projet'),
+      ),
+      h('p', { class: 'muted' }, 'Les modèles ont été allégés (géométrie simplifiée, textures réduites) pour le jeu.'),
       h('h3', null, 'Police'),
       h(
         'p',

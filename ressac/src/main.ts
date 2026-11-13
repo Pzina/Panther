@@ -9,6 +9,7 @@ import { createNewState, type GameState } from './core/state';
 import { getAchievement } from './data/achievements';
 import { JOURNAL_PAGES, TIPS } from './data/dialogues';
 import { getZone } from './data/zones';
+import { loadAssets } from './three/assets';
 import { preloadFishImages } from './three/fishMesh';
 import { Stage } from './three/stage';
 import { FishingView } from './three/views/FishingView';
@@ -16,7 +17,7 @@ import { PortView } from './three/views/PortView';
 import { TitleView } from './three/views/TitleView';
 import { claimableMilestones, collectionPercent } from './systems/progression';
 import { button, h } from './ui/dom';
-import { FishingHud, HomeHud, PortHud } from './ui/hud';
+import { FishingHud, HomeHud, PortHud, toggleView } from './ui/hud';
 import { registerScreens } from './ui/screens';
 import { Ui, wait } from './ui/ui';
 import { rewardLine } from './ui/widgets';
@@ -351,9 +352,12 @@ window.addEventListener('resize', () => {
 
 /** Real loading work: the first species are modelled in 3D and photographed for the notebook. */
 async function start(): Promise<void> {
-  await preloadFishImages((p) => {
+  const bar = (p: number): void => {
     if (splashBar) splashBar.style.width = `${Math.round(p * 100)}%`;
-  });
+  };
+  // Supplied 3D models and textures first, then the species photographed for the notebook.
+  await loadAssets((p) => bar(p * 0.6));
+  await preloadFishImages((p) => bar(0.6 + p * 0.4));
   const elapsed = performance.now() - splashStart;
   if (elapsed < 900) await wait(900 - elapsed);
   await app.ui.setMode('home', true);
@@ -382,6 +386,10 @@ window.addEventListener('popstate', () => {
 });
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') app.ui.back();
+  const free = !app.ui.covered && document.activeElement === document.body;
+  // V: first / third person. N: sail or fish.
+  if (event.code === 'KeyV' && free && app.ui.mode !== 'home') toggleView();
+  if (event.code === 'KeyN' && free && app.ui.mode === 'fishing') document.getElementById('btn-nav')?.click();
   // E / Enter: use the place the character is standing next to (port).
   if (
     (event.code === 'KeyE' || event.key === 'Enter') &&

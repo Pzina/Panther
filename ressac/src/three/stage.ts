@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addLook } from '../ui/joystick';
 
 /** A 3D scene of the game (title, port, fishing). */
 export abstract class View {
@@ -20,6 +21,9 @@ export abstract class View {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
+  /** When true, dragging on the canvas turns the camera instead of acting on the game. */
+  dragLook = false;
+
   pointer(_type: 'down' | 'up' | 'move', _x: number, _y: number): void {
     /* optional */
   }
@@ -102,14 +106,33 @@ export class Stage {
     this.renderer.setClearColor(0x0f2a3d);
     container.appendChild(this.renderer.domElement);
     const canvas = this.renderer.domElement;
+    let dragging = false;
+    let rightDrag = false;
+    let lastX = 0;
+    let lastY = 0;
     const send = (type: 'down' | 'up' | 'move') => (ev: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      if (!this.isPausedFlag)
-        this.view?.pointer(
-          type,
-          (ev.clientX - rect.left) / rect.width,
-          (ev.clientY - rect.top) / rect.height,
-        );
+      const view = this.view;
+      if (this.isPausedFlag || !view) return;
+      if (type === 'down') {
+        dragging = true;
+        rightDrag = ev.button === 2;
+        lastX = ev.clientX;
+        lastY = ev.clientY;
+      }
+      // Right mouse button, or any drag in a view that asks for it: turn the camera.
+      const looking = dragging && (rightDrag || view.dragLook);
+      if (type === 'move' && looking) {
+        addLook(ev.clientX - lastX, ev.clientY - lastY);
+        lastX = ev.clientX;
+        lastY = ev.clientY;
+      }
+      if (type === 'up') dragging = false;
+      if (rightDrag) {
+        if (type === 'up') rightDrag = false;
+        return;
+      }
+      view.pointer(type, (ev.clientX - rect.left) / rect.width, (ev.clientY - rect.top) / rect.height);
     };
     canvas.addEventListener('pointerdown', send('down'));
     canvas.addEventListener('pointermove', send('move'));

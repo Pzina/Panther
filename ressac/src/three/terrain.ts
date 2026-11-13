@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Rng } from '../core/rng';
+import { assetTexture, cloneModel } from './assets';
 import { fbm } from './noise';
 
 export type HeightFn = (x: number, z: number) => number;
@@ -49,10 +50,23 @@ export function landMesh(
     colors[i * 3 + 2] = c.b;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  // Ground detail from the supplied sand photo-texture, tinted by the vertex colours.
+  const detail = assetTexture('sand');
+  if (detail) {
+    const uv = geo.getAttribute('uv') as THREE.BufferAttribute;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 7, pos.getZ(i) / 7);
+  }
   const mesh = new THREE.Mesh(
     geo,
-    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }),
+    new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.95,
+      metalness: 0,
+      map: detail ?? null,
+    }),
   );
+  // The photo-texture is mid-grey: compensate so that the vertex colours keep their brightness.
+  if (detail) (mesh.material as THREE.MeshStandardMaterial).color.setScalar(1.7);
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -79,6 +93,28 @@ export function scatterTrees(
     spots.push({ x, y, z, s: rng.range(0.75, 1.4), r: rng.range(0, Math.PI * 2) });
   }
   if (spots.length === 0) return group;
+  // Pines and broadleaf woods use the supplied pine model when it is available.
+  const pine = kind === 'pine' || kind === 'broadleaf' ? cloneModel('pine') : null;
+  if (pine) {
+    const used = spots.slice(0, kind === 'pine' ? 60 : 40);
+    pine.updateMatrixWorld(true);
+    const dummy = new THREE.Object3D();
+    pine.traverse((o) => {
+      const src = o as THREE.Mesh;
+      if (!src.isMesh) return;
+      const inst = new THREE.InstancedMesh(src.geometry, src.material, used.length);
+      used.forEach((s, i) => {
+        dummy.position.set(s.x, s.y - 0.3, s.z);
+        dummy.rotation.set(0, s.r, 0);
+        dummy.scale.setScalar(0.42 + s.s * 0.28);
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix.clone().multiply(src.matrixWorld));
+      });
+      inst.castShadow = true;
+      group.add(inst);
+    });
+    return group;
+  }
   const trunkMat = new THREE.MeshStandardMaterial({
     color: kind === 'palm' ? 0x8a6a4a : 0x4a3423,
     roughness: 1,

@@ -10,7 +10,8 @@ Vous héritez d'une vieille barque et d'une cabane sur l'archipel de Ressac. L'i
 - 18 missions d'histoire en 3 actes, 3 missions quotidiennes, 12 défis, 39 succès ;
 - une boutique complète (8 cannes, 6 moulinets, 5 fils, 5 hameçons, 10 appâts + le leurre de l'histoire, 4 bateaux, 18 cosmétiques) ;
 - un monde en **3D temps réel** (Three.js) : mer animée qui reflète le ciel, soleil, lune, nuages, pluie, orage, brouillard, îles en relief, bateau, canne, poissons modélisés ;
-- graphismes 100 % générés par le code (aucune image ni modèle importé), sons et musique 100 % synthétisés (Web Audio).
+- personnage animé, barque, ponton, canne et pins issus de modèles fournis ; poissons, ciel, mer et relief générés par le code ; sons et musique 100 % synthétisés (Web Audio) ;
+- vue à la 1re ou à la 3e personne, caméra orientable, navigation libre du bateau dans chaque zone avec mini-carte.
 
 Le nom du jeu est centralisé dans `src/config/constants.ts` (`GAME_NAME`).
 
@@ -69,6 +70,10 @@ scripts/            simulation, icônes, captures, gabarit du service worker
 **Pourquoi Three.js et plus Phaser ?** Le cahier des charges d'origine imposait Phaser 3 (moteur 2D). La demande d'un jeu en 3D aux graphismes réalistes l'a remplacé par **Three.js 0.170.0** (épinglé), qui dessine les trois scènes dans un seul canvas WebGL. Les règles du jeu, les écrans et les tests n'ont pas changé.
 
 **Pourquoi des menus en HTML/CSS par-dessus le canvas ?** Le moteur 3D dessine le monde ; tout ce qui se lit (menus, listes, fiches, boutons) est en HTML/CSS : texte net à toutes les densités d'écran, défilement natif, mise en page fluide de 360 px à la tablette, *safe areas*, taille de texte réglable, accessibilité, et un style unique. Au port, les boutons HTML sont accrochés aux lieux 3D qu'ils ouvrent (projection à chaque image).
+
+**Modèles et textures fournis (`public/assets/`, 4 Mo).** Le personnage animé, la barque, le ponton, la canne, le pin, le projecteur et deux textures de sol viennent de fichiers fournis (voir les crédits du jeu pour les auteurs et licences, dont trois en CC BY 4.0 qui exigent cette mention). Ils ont été convertis et allégés : 1,5 Go de fichiers source → 4 Mo (géométrie simplifiée, textures en 512–1024 px, compression meshopt + WebP ; les fichiers Blender ont été exportés en glTF). `src/three/assets.ts` les charge au démarrage ; si un fichier manque, le jeu retombe sur l'objet généré par le code.
+
+**Caméra et navigation.** Un bouton (ou la touche V) bascule entre la vue à la 3e personne, où l'on voit le personnage, et la 1re personne. La caméra se tourne en faisant glisser le doigt au port, avec le pavé « œil » en pêche, ou avec le clic droit maintenu sur PC (`src/three/cameraRig.ts`). En pêche, le bouton « Naviguer » (touche N) donne la barre : le joystick devient accélérateur et gouvernail, la barque parcourt toute la zone (les terres et le bord de la carte l'arrêtent), et « Pêcher » reprend la pêche à l'endroit choisi. Chaque zone cache des **zones poissonneuses** (mouettes qui tournent, cercle sur l'eau, points sur la mini-carte), renouvelées chaque jour de jeu : y lancer donne plus de chance et des touches plus rapides.
 
 **Version PC.** La même application s'adapte à l'écran : en fenêtre paysage (ordinateur), la vue 3D occupe tout l'écran avec un cadrage élargi, les menus s'ouvrent dans un panneau centré à deux colonnes, le carnet passe sur 4 colonnes et une aide clavier s'affiche. Commandes : flèches ou ZQSD pour marcher, E ou Entrée pour entrer dans le lieu proche, Espace ou clic maintenu pour lancer, ferrer et mouliner, souris pour viser, Échap pour revenir ou mettre en pause. Le joystick tactile est masqué quand l'appareil a une souris.
 

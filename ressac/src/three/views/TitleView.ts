@@ -1,7 +1,8 @@
 import { app } from '../../app';
 import { getBoat, getCosmetic } from '../../data/equipment';
 import { getZone } from '../../data/zones';
-import { makeBoat, makeLighthouse } from '../props';
+import { makePlayerBoat } from '../hero';
+import { makeLighthouse } from '../props';
 import { Environment } from '../sky';
 import { Stage, View } from '../stage';
 import { landMesh, scatterTrees, type HeightFn } from '../terrain';
@@ -50,7 +51,10 @@ export class TitleView extends View {
     lighthouse.position.set(-34, height(-34, -118) - 0.3, -118);
     lighthouse.scale.setScalar(1.5);
     this.scene.add(lighthouse);
-    this.boat = makeBoat(getCosmetic(state.cosmetics.boatColor), getBoat(state.equipment.boat).tier);
+    this.boat = makePlayerBoat(
+      getCosmetic(state.cosmetics.boatColor),
+      getBoat(state.equipment.boat).tier,
+    ).group;
     this.boat.rotation.y = Math.PI * 0.42;
     this.scene.add(this.boat);
     this.camera.fov = 52;

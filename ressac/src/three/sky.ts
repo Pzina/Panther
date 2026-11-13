@@ -304,6 +304,7 @@ export class Environment {
     this.dome.position.copy(camera.position);
     this.dome.scale.setScalar(camera instanceof THREE.PerspectiveCamera ? camera.far * 0.9 : 500);
 
+    this.rain.position.set(camera.position.x, 0, camera.position.z);
     if (this.rain.visible) {
       const attr = this.rain.geometry.getAttribute('position') as THREE.BufferAttribute;
       const a = attr.array as Float32Array;

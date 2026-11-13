@@ -2576,3 +2576,83 @@ body.desktop .modal .list {
 body.desktop .spot {
   min-width: 96px;
 }
+
+/* ───────── Camera look pad, mini-map, sailing ───────── */
+.lookpad {
+  position: absolute;
+  right: calc(var(--safe-right) + 14px);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(15, 42, 61, 0.36);
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  pointer-events: auto;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lookpad-eye {
+  width: 30px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  pointer-events: none;
+}
+body.left-handed .lookpad {
+  right: auto;
+  left: calc(var(--safe-left) + 14px);
+}
+.fishing-hud .lookpad {
+  bottom: calc(var(--safe-bottom) + 70px);
+}
+@media (hover: hover) and (pointer: fine) {
+  body.desktop .lookpad {
+    display: none;
+  }
+}
+.side-tools {
+  position: absolute;
+  left: calc(var(--safe-left) + 10px);
+  top: calc(var(--safe-top) + 104px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+body.left-handed .side-tools {
+  left: auto;
+  right: calc(var(--safe-right) + 10px);
+  align-items: flex-end;
+}
+.minimap {
+  width: 92px;
+  height: 92px;
+  border-radius: 14px;
+  border: 2.5px solid #fbf5e6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  background: #14365f;
+}
+.side-row {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+.fishing-hud .tutorial-slot:not(:empty) ~ .side-tools,
+.fishing-hud[data-state='fight'] .side-tools,
+.fishing-hud[data-state='bite'] .side-tools {
+  display: none;
+}
+.fishing-hud:not([data-state='idle']) #btn-nav {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.fishing-hud[data-nav='1'] .hud-bottom,
+.fishing-hud[data-nav='1'] .power {
+  display: none;
+}
+body.desktop .minimap {
+  width: 150px;
+  height: 150px;
+}

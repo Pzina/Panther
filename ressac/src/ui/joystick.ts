@@ -3,6 +3,16 @@ import { h } from './dom';
 /** Movement input shared by the 3D views: x = right, y = forward, both in -1..1. */
 export const moveInput = { x: 0, y: 0 };
 
+/** Camera look deltas (radians) accumulated since the last frame; views consume and reset them. */
+export const lookInput = { dx: 0, dy: 0 };
+const LOOK_SPEED = 0.006;
+
+/** Adds a drag (in CSS pixels) to the camera look input. */
+export function addLook(px: number, py: number): void {
+  lookInput.dx += px * LOOK_SPEED;
+  lookInput.dy += py * LOOK_SPEED;
+}
+
 const stick = { x: 0, y: 0 };
 const keys = new Set<string>();
 const KEYMAP: Record<string, [number, number]> = {
@@ -98,4 +108,35 @@ export function resetMove(): void {
   stick.y = 0;
   keys.clear();
   sync();
+}
+
+/** Touch pad that turns the camera (the right mouse button does the same on a PC). */
+export function lookPad(label: string): HTMLElement {
+  const el = h(
+    'div',
+    { class: 'lookpad', id: 'lookpad', role: 'application', 'aria-label': label },
+    h('div', { class: 'lookpad-eye' }),
+  );
+  let active: number | null = null;
+  let lastX = 0;
+  let lastY = 0;
+  el.addEventListener('pointerdown', (ev) => {
+    active = ev.pointerId;
+    lastX = ev.clientX;
+    lastY = ev.clientY;
+    el.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  el.addEventListener('pointermove', (ev) => {
+    if (ev.pointerId !== active) return;
+    addLook((ev.clientX - lastX) * 1.6, (ev.clientY - lastY) * 1.6);
+    lastX = ev.clientX;
+    lastY = ev.clientY;
+  });
+  const release = (): void => {
+    active = null;
+  };
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+  return el;
 }
