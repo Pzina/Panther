@@ -427,11 +427,13 @@ export class PortView extends View {
       const el = document.getElementById(anchor.id);
       if (!el) continue;
       v.copy(anchor.pos).project(this.camera);
-      const sx = (v.x * 0.5 + 0.5) * 100;
-      const sy = (-v.y * 0.5 + 0.5) * 100;
-      // A place that left the view has no button: walk back to it.
-      const visible = v.z < 1 && sx > 4 && sx < 96 && sy > 8 && sy < 74;
-      el.style.display = visible ? '' : 'none';
+      let sx = (v.x * 0.5 + 0.5) * 100;
+      let sy = (-v.y * 0.5 + 0.5) * 100;
+      // Places stay reachable even when they are out of view: their button sticks to the screen edge.
+      if (v.z > 1) {
+        sx = sx < 50 ? 100 : 0;
+        sy = 45;
+      }
       el.style.left = `${Math.min(86, Math.max(14, sx)).toFixed(1)}%`;
       el.style.top = `${Math.min(62, Math.max(27, sy)).toFixed(1)}%`;
       el.classList.toggle(

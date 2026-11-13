@@ -181,6 +181,7 @@ export class HomeHud implements Hud {
 export class PortHud implements Hud {
   el = h('div', { class: 'hud port-hud', id: 'port-hud' });
   private stick = joystick(t('hud.move'));
+  private signature = '';
   private timer: ReturnType<typeof setInterval>;
 
   constructor() {
@@ -225,6 +226,27 @@ export class PortHud implements Hud {
         h('span', null, label),
         badge ? h('i', { class: 'badge-dot' }) : null,
       );
+    // Rebuild only when something shown has changed (keeps buttons stable under the finger).
+    const signature = [
+      state.coins,
+      state.level,
+      state.xp,
+      Math.floor(state.reputation),
+      formatClock(state.clockMinutes),
+      game.weather('anse'),
+      game.phase('anse'),
+      state.story.index,
+      p.value,
+      state.creel.length,
+      game.stats().creelSize,
+      tutorialStep,
+      claimable,
+      state.settings.thirdPerson,
+      state.zone,
+      game.stats().rested,
+    ].join('|');
+    if (signature === this.signature) return;
+    this.signature = signature;
     // The joystick stays in place: removing it would interrupt a gesture in progress.
     for (const child of [...this.el.children]) if (child !== this.stick) child.remove();
     if (!this.stick.parentElement) this.el.append(this.stick);
